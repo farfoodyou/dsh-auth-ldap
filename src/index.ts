@@ -15,8 +15,10 @@ import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-client-connection'
 import type {} from '@deepseek-ai/dsh-host-webserver'
 
+import { type AuthenticatedUser, createCredentialChain } from './authenticate.js'
 import type { Config } from './config.js'
 import { configWarnings, validateConfig } from './config.js'
+import { connectDirectory } from './ldap/client.js'
 import { installGate } from './gate.js'
 import { createLoginHandler, createLogoutHandler } from './routes/login.js'
 import { createStatusHandler } from './routes/status.js'
@@ -40,6 +42,18 @@ export type {
 } from './config.js'
 export { createAuthPrincipal, isAuthPrincipal } from './principal.js'
 export type { AuthBackend, AuthPrincipal, AuthPrincipalInput } from './principal.js'
+export { createCredentialChain } from './authenticate.js'
+export type { AuthenticatedUser } from './authenticate.js'
+export { connectDirectory } from './ldap/client.js'
+export { applyFilterTemplate, escapeDnValue, escapeFilterValue } from './ldap/escape.js'
+export { rolesFor, verifyDirectory } from './ldap/verify.js'
+export type {
+  DirectoryConnection,
+  DirectoryConnector,
+  DirectoryFailure,
+  DirectoryResult,
+  DirectoryUser,
+} from './ldap/types.js'
 export { createLoginHandler, createLogoutHandler, safeNext } from './routes/login.js'
 export { createStatusHandler, statusPayload, PHASE } from './routes/status.js'
 export type { StatusPayload } from './routes/status.js'
@@ -47,7 +61,7 @@ export { SessionCookie, SessionStore, loadOrCreateSecret } from './session.js'
 export type { SessionInput, SessionRecord, CookiePayload } from './session.js'
 export { authenticateLocal, findAccount, loadUsers, saveUsers } from './users.js'
 export type { Account, UsersFile } from './users.js'
-export { hashPassword, verifyPassword } from './password.js'
+export { MIN_PASSWORD_LENGTH, hashPassword, verifyPassword } from './password.js'
 export type { PasswordRecord } from './password.js'
 
 /**
@@ -139,7 +153,17 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     )
   })
 
-  const login = createLoginHandler({ config, store, cookie, readUsers, warn })
+  const verify =
+    config.local.enabled || config.ldap.enabled
+      ? createCredentialChain({
+          config,
+          readUsers,
+          ...(config.ldap.enabled ? { connector: connectDirectory } : {}),
+          warn,
+        })
+      : (): Promise<AuthenticatedUser | undefined> => Promise.resolve(undefined)
+
+  const login = createLoginHandler({ config, store, cookie, verify, warn })
   const logout = createLogoutHandler({ store, cookie })
 
   ctx.inject(['webServer'], (webCtx) => {

@@ -6,9 +6,10 @@ Authentication gate for [DeepSeek Harness](https://github.com/deepseek-ai/deepse
 profiles: sign in with a **local account** or an **LDAP / Active Directory** account, through one login
 page and one configuration.
 
-> **Status: developer preview.** Milestone M1 is shipped: a real gate with local accounts, signed
-> sessions, throttled login, and logout. The directory backend lands in M2 (0.3.0); `ldap.*`
-> configuration is validated but not yet used. See [docs/roadmap.md](docs/roadmap.md).
+> **Status: developer preview.** M1 (gate + local accounts) and M2 (directory backend) are shipped.
+> Directory login is implemented and unit tested; switching it on needs the values in
+> [docs/ldap-integration.md](docs/ldap-integration.md), which is written to be handed to the directory
+> team. See [docs/roadmap.md](docs/roadmap.md).
 
 ## Why this exists
 
@@ -29,8 +30,8 @@ them can verify against a directory. `dsh-auth-ldap` fills that gap without fork
 
 **Phase 1 - authentication gate**
 
-- One login page with local accounts (`scrypt` records in a JSON file). Directory accounts
-  (`search-then-bind`) follow in M2.
+- One login page, two credential backends: local accounts (`scrypt` records in a JSON file) and
+  directory accounts (`search-then-bind` over LDAPS or STARTTLS, group-to-role mapping).
 - Signed, `HttpOnly`, `SameSite=Lax` session cookies backed by a server-side table: revocable,
   TTL-bounded, and persisted so a restart does not sign everyone out.
 - Page documents and the `/api` transport are both gated; `/api` keeps its own host fence.
@@ -155,6 +156,26 @@ Configuration is validated twice: the schema rejects wrong shapes and ranges at 
 without STARTTLS". Those failures stop the mount. Deployment smells - no backend configured, local
 accounts as the only backend, disabled certificate verification - are logged as warnings so the
 plugin still mounts and can be diagnosed from a running instance.
+
+## Connecting a directory
+
+Read [docs/ldap-integration.md](docs/ldap-integration.md) first: it lists the values the directory team
+has to provide, the exact sequence the plugin performs on the wire, and what it never does (no writes,
+no password reads, simple bind only). Feed the returned values into the profile user layer, put the
+service account password in the service unit's environment, and restart.
+
+```yaml
+ldap:
+  enabled: true
+  url: ldaps://dc1.corp.example.com:636
+  userSearchBase: ou=people,dc=corp,dc=example,dc=com
+  userSearchFilter: (sAMAccountName={{username}})
+  bindDn: cn=svc-dsh,ou=service,dc=corp,dc=example,dc=com
+  bindPasswordEnv: DSH_LDAP_BIND_PASSWORD
+  groupSearchBase: ou=groups,dc=corp,dc=example,dc=com
+  groupSearchFilter: (member={{dn}})
+  adminGroups: [dsh-admins]
+```
 
 ## Security model
 

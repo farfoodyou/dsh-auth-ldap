@@ -25,13 +25,16 @@ Each milestone is a release. "Done" means: code merged with tests, README and CH
 - [x] Unit coverage for the gate decisions, cookie codec, session store, password records, and handlers
 - [ ] Integration test against a real `web` profile in CI (currently a manual smoke step)
 
-## M2 - directory backend (0.3.0)
+## M2 - directory backend (0.3.0, shipped; awaiting directory values)
 
-- [ ] `search-then-bind` over LDAPS and STARTTLS with service account support
-- [ ] RFC 4515 escaping and ambiguity detection (`sizeLimit: 2`)
-- [ ] Group query and role mapping (`adminGroups`)
-- [ ] Directory outage semantics: fail closed, distinct audit reason
+- [x] `search-then-bind` over LDAPS and STARTTLS with service account support
+- [x] RFC 4515 / RFC 4514 escaping and ambiguity detection (`sizeLimit: 2`)
+- [x] Group query and role mapping (`adminGroups`, common name or DN)
+- [x] Directory outage semantics: fail closed, distinct audit reason
+- [x] Credential chain: local accounts win for a name that exists locally
+- [x] [LDAP integration sheet](ldap-integration.md) for the directory team
 - [ ] Nightly integration job against a containerized OpenLDAP and a mocked Active Directory schema
+- [ ] Fill in a real directory and record the verification output in the release notes
 
 ## M3 - operations (0.4.0)
 

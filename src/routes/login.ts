@@ -8,10 +8,10 @@
 
 import type { IncomingMessage, ServerResponse } from 'node:http'
 
+import type { AuthenticatedUser } from '../authenticate.js'
 import type { Config } from '../config.js'
 import { escapeHtml, renderLoginPage } from '../login-page.js'
 import type { SessionCookie, SessionStore } from '../session.js'
-import { type UsersFile, authenticateLocal, findAccount } from '../users.js'
 
 /** Largest accepted form body. */
 const MAX_BODY_BYTES = 4096
@@ -30,8 +30,8 @@ export interface LoginDeps {
   readonly store: SessionStore
   /** Cookie codec. */
   readonly cookie: SessionCookie
-  /** Reads the account file on every attempt, so edits apply without a restart. */
-  readonly readUsers: () => Promise<UsersFile>
+  /** Resolves submitted credentials through the configured backends. */
+  readonly verify: (username: string, password: string) => Promise<AuthenticatedUser | undefined>
   /** Log sink; never receives credentials. */
   readonly warn: (message: string) => void
 }
@@ -155,7 +155,7 @@ export function createLoginHandler(
   deps: LoginDeps,
 ): (request: IncomingMessage, response: ServerResponse) => Promise<void> {
   const budget = new AttemptBudget()
-  const { config, store, cookie, readUsers, warn } = deps
+  const { config, store, cookie, verify, warn } = deps
 
   const render = (
     response: ServerResponse,
@@ -200,8 +200,8 @@ export function createLoginHandler(
       return
     }
 
-    if (!config.local.enabled) {
-      render(response, authority, '/', 'Local accounts are disabled on this instance.', 403)
+    if (!config.local.enabled && !config.ldap.enabled) {
+      render(response, authority, '/', 'No sign-in method is configured on this instance.', 403)
       return
     }
 
@@ -230,10 +230,7 @@ export function createLoginHandler(
       return
     }
 
-    const usersFile = await readUsers()
-    const account = config.local.enabled
-      ? await authenticateLocal(usersFile, username, password)
-      : undefined
+    const account = await verify(username, password)
     if (account === undefined) {
       budget.fail(accountKey)
       budget.fail(address)
@@ -245,13 +242,10 @@ export function createLoginHandler(
     budget.reset(accountKey)
     budget.reset(address)
     const session = await store.create(
-      { accountId: account.id, displayName: account.displayName, roles: account.roles },
+      { accountId: account.accountId, displayName: account.displayName, roles: account.roles },
       config.session.ttlSeconds,
     )
-    const known = findAccount(usersFile, account.id) !== undefined
-    warn(
-      `login succeeded: ${account.id} from ${address}${known ? '' : ' (account vanished during login)'}`,
-    )
+    warn(`login succeeded: ${account.accountId} (${account.backend}) from ${address}`)
 
     response.writeHead(303, {
       location: next,

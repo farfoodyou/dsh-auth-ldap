@@ -43,12 +43,16 @@ export interface LdapBackendConfig {
   bindDn: string
   /** Environment variable holding the service account password. */
   bindPasswordEnv: string
+  /** PEM CA bundle used to verify the directory certificate; empty uses the system roots. */
+  caFile: string
   /** Attribute read as the display name; falls back to the login name. */
   displayNameAttribute: string
   /** Base DN searched for groups; empty disables group mapping. */
   groupSearchBase: string
   /** Group filter; `{{dn}}` is replaced with the RFC 4515 escaped user DN. */
   groupSearchFilter: string
+  /** Attribute read as the group name, matched against `adminGroups`. */
+  groupNameAttribute: string
   /** Group names or DNs whose members receive the `admin` role. */
   adminGroups: string[]
   /** Upgrade a plain `ldap://` connection with STARTTLS before binding. */
@@ -127,9 +131,11 @@ export const Config: z<Config> = z.object({
     userSearchFilter: z.string().default('(uid={{username}})'),
     bindDn: z.string().default(''),
     bindPasswordEnv: z.string().default(''),
+    caFile: z.string().default(''),
     displayNameAttribute: z.string().default('displayName'),
     groupSearchBase: z.string().default(''),
     groupSearchFilter: z.string().default('(member={{dn}})'),
+    groupNameAttribute: z.string().default('cn'),
     adminGroups: z.array(z.string()).default([]),
     startTls: z.boolean().default(false),
     rejectUnauthorized: z.boolean().default(true),

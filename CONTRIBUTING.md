@@ -90,14 +90,15 @@ commit subject. Force-pushing to `main` is forbidden.
 
 ## Documentation layout
 
-| Location          | Language | Purpose                                                   |
-| ----------------- | -------- | --------------------------------------------------------- |
-| `README.md`       | English  | Entry point, install, configuration, status               |
-| `README.zh.md`    | Chinese  | Same content, kept in sync                                |
-| `docs/design/`    | English  | One note per subsystem; the source of truth for behaviour |
-| `docs/adr/`       | English  | Decisions with context and rejected alternatives          |
-| `docs/roadmap.md` | English  | Milestones and their acceptance criteria                  |
-| `AGENTS.md`       | English  | Conventions for automated contributors                    |
+| Location                                | Language  | Purpose                                                                      |
+| --------------------------------------- | --------- | ---------------------------------------------------------------------------- |
+| `README.md`                             | English   | Entry point, install, configuration, status                                  |
+| `README.zh.md`                          | Chinese   | Same content, kept in sync                                                   |
+| `docs/design/`                          | English   | One note per subsystem; the source of truth for behaviour                    |
+| `docs/ldap-integration.md` (+ `.zh.md`) | Bilingual | Requirements sheet handed to the directory team; keep both languages in sync |
+| `docs/adr/`                             | English   | Decisions with context and rejected alternatives                             |
+| `docs/roadmap.md`                       | English   | Milestones and their acceptance criteria                                     |
+| `AGENTS.md`                             | English   | Conventions for automated contributors                                       |
 
 When a design note and the code disagree, that is a bug: fix one of them in the same pull request.
 

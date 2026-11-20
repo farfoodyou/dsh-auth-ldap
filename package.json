@@ -1,6 +1,6 @@
 {
   "name": "dsh-auth-ldap",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Authentication gate for DeepSeek Harness web profiles: local accounts and LDAP/Active Directory bind behind one login page.",
   "keywords": [
     "dsh",
@@ -67,7 +67,8 @@
     "prepack": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
-    "@deepseek-ai/schemastery": "^3.19.0"
+    "@deepseek-ai/schemastery": "^3.19.0",
+    "ldapts": "^9.3.1"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.1.0",

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { DEFAULT_PARAMS, hashPassword, verifyPassword } from '../src/password.js'
+import {
+  DEFAULT_PARAMS,
+  MIN_PASSWORD_LENGTH,
+  hashPassword,
+  verifyPassword,
+} from '../src/password.js'
 
 describe('hashPassword', () => {
   it('produces a scrypt record with salt and hash', async () => {
@@ -21,8 +26,13 @@ describe('hashPassword', () => {
     expect(first.hash).not.toBe(second.hash)
   })
 
-  it('rejects short passwords', async () => {
-    await expect(hashPassword('short')).rejects.toThrow(/at least 8/u)
+  it('rejects passwords below the typo floor', async () => {
+    await expect(hashPassword('short')).rejects.toThrow(
+      new RegExp(`at least ${String(MIN_PASSWORD_LENGTH)}`, 'u'),
+    )
+    await expect(hashPassword('a'.repeat(MIN_PASSWORD_LENGTH))).resolves.toMatchObject({
+      scheme: 'scrypt',
+    })
   })
 })
 

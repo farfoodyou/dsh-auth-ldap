@@ -9,7 +9,7 @@ import { parseConfig } from '../src/config.js'
 import { hashPassword } from '../src/password.js'
 import { createLoginHandler, createLogoutHandler, safeNext } from '../src/routes/login.js'
 import { SessionCookie, SessionStore } from '../src/session.js'
-import { type UsersFile, saveUsers, upsertAccount } from '../src/users.js'
+import { type UsersFile, authenticateLocal, saveUsers, upsertAccount } from '../src/users.js'
 
 interface Captured {
   status?: number
@@ -71,7 +71,17 @@ async function fixture() {
     config,
     store,
     cookie,
-    readUsers: async () => file,
+    verify: async (username, password) => {
+      const account = await authenticateLocal(file, username, password)
+      return account === undefined
+        ? undefined
+        : {
+            accountId: account.id.toLowerCase(),
+            displayName: account.displayName,
+            roles: account.roles,
+            backend: 'local' as const,
+          }
+    },
     warn: (message) => warnings.push(message),
   })
   return { handler, store, cookie, warnings, file }

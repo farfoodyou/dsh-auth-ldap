@@ -5,7 +5,7 @@
 为 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（`dsh`）的 Web profile 提供认证门禁：
 用一个登录页、一份配置，支持**本地账户**和 **LDAP / Active Directory** 两种凭据。
 
-> **状态：开发者预览。** M1 已交付：真正可用的门禁 + 本地账户 + 签名会话 + 登录限速 + 登出。目录后端在 M2（0.3.0），
+> **状态：开发者预览。** 见 [docs/ldap-integration.zh.md](docs/ldap-integration.zh.md)。M1 已交付：真正可用的门禁 + 本地账户 + 签名会话 + 登录限速 + 登出。目录后端在 M2（0.3.0），
 > `ldap.*` 配置会被校验但尚未生效。见 [docs/roadmap.md](docs/roadmap.md)。
 
 ## 为什么需要它
@@ -26,7 +26,8 @@
 
 **一期 —— 认证门禁**
 
-- 一个登录页 + 本地账户（JSON 文件里的 `scrypt` 记录）。目录账户（`search-then-bind`）在 M2 跟进。
+- 一个登录页 + 两种凭据后端：本地账户（JSON 文件里的 `scrypt` 记录）、目录账户（LDAPS 或 STARTTLS 上的
+  `search-then-bind`，支持群组到角色映射）。
 - 签名的 `HttpOnly` + `SameSite=Lax` 会话 cookie，配服务端会话表：可吊销、受 TTL 约束、持久化，重启不掉线。
 - 页面文档与 `/api` 传输双层把关；`/api` 自带的 host 栅栏保持不变。
 - 登录限速：同一账户或来源地址 5 次失败后冷却 5 分钟；失败响应不泄露账户是否存在。
@@ -143,6 +144,25 @@ M1 落地之前，插件只提供状态路由；界面仍然只靠启动 token �
 配置校验分两层：schema 在加载时拒绝形状与范围错误；`validateConfig` 拒绝组合错误，例如
 「启用 LDAP 但没有搜索 Base DN」「明文 LDAP 且未开 STARTTLS」。这类错误会中止挂载。而部署异味
 （没有配置任何后端、只有本地账户、关闭了证书校验）只记警告，插件照常挂载，便于在运行中的实例上排查。
+
+## 接入目录
+
+先读 [docs/ldap-integration.zh.md](docs/ldap-integration.zh.md)：里面列了目录侧必须提供的值、插件在协议上执行的
+确切时序，以及它绝不做什么（不写目录、不读密码、只做 simple bind）。拿到回填的表后填进 profile 用户层，把服务账户
+密码放进服务单元的环境变量，重启即可。
+
+```yaml
+ldap:
+  enabled: true
+  url: ldaps://dc1.corp.example.com:636
+  userSearchBase: ou=people,dc=corp,dc=example,dc=com
+  userSearchFilter: (sAMAccountName={{username}})
+  bindDn: cn=svc-dsh,ou=service,dc=corp,dc=example,dc=com
+  bindPasswordEnv: DSH_LDAP_BIND_PASSWORD
+  groupSearchBase: ou=groups,dc=corp,dc=example,dc=com
+  groupSearchFilter: (member={{dn}})
+  adminGroups: [dsh-admins]
+```
 
 ## 安全模型
 

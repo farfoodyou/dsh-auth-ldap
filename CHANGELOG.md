@@ -8,6 +8,31 @@ behaviour change increments the minor version and an internal change increments 
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-20
+
+### Added
+
+- Directory backend: `search-then-bind` over LDAPS or STARTTLS with an optional service account,
+  ambiguity detection (`sizeLimit: 2`), and group-to-role mapping against `adminGroups` (common name
+  or full DN, case-insensitive).
+- RFC 4515 filter escaping and RFC 4514 DN escaping behind `applyFilterTemplate`, so a submitted login
+  name can never widen a filter.
+- Credential chain: local accounts win for a name that exists locally, other names fall through to the
+  directory, so a directory account cannot shadow a local operator account.
+- Failure classification (`invalid-credentials`, `ambiguous`, `unavailable`) logged per attempt, with
+  every directory failure failing closed.
+- `docs/ldap-integration.md` and its Chinese counterpart: the requirements sheet for the directory
+  team, including the exact wire sequence, service account rights, AD and OpenLDAP specifics, and the
+  limitations to disclose.
+- `groupNameAttribute` configuration and `test/ldap-*.spec.ts`, `test/authenticate.spec.ts`.
+
+### Changed
+
+- `MIN_PASSWORD_LENGTH` (6) documents the hasher's typo floor; it is not a password policy. Directory
+  strength is enforced by the directory.
+- Login accepts a request when either backend is enabled and reports "no sign-in method configured"
+  when neither is.
+
 ## [0.2.0] - 2026-11-20
 
 ### Added
@@ -70,7 +95,8 @@ behaviour change increments the minor version and an internal change increments 
 - Documentation: bilingual README, contributing guide, security policy, design note for the gate,
   two ADRs, and a milestone roadmap.
 
-[Unreleased]: https://github.com/farfoodyou/dsh-auth-ldap/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/farfoodyou/dsh-auth-ldap/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/farfoodyou/dsh-auth-ldap/releases/tag/v0.3.0
 [0.2.0]: https://github.com/farfoodyou/dsh-auth-ldap/releases/tag/v0.2.0
 [0.1.1]: https://github.com/farfoodyou/dsh-auth-ldap/releases/tag/v0.1.1
 [0.1.0]: https://github.com/farfoodyou/dsh-auth-ldap/releases/tag/v0.1.0

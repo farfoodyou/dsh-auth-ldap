@@ -27,6 +27,15 @@ const SALT_BYTES = 16
 /** Derived key length in bytes. */
 const KEY_BYTES = 32
 
+/**
+ * Shortest password the hasher accepts.
+ *
+ * This is a typo floor, not a password policy: deployments that need real
+ * strength should enforce it in the directory or in the account-file tooling.
+ * A directory backend never consults this constant.
+ */
+export const MIN_PASSWORD_LENGTH = 6
+
 /** Stored password record; the plaintext is never persisted. */
 export interface PasswordRecord {
   /** Only `scrypt` is accepted. */
@@ -69,7 +78,9 @@ export async function hashPassword(
   password: string,
   params: { N: number; r: number; p: number } = DEFAULT_PARAMS,
 ): Promise<PasswordRecord> {
-  if (password.length < 8) throw new Error('password must be at least 8 characters')
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    throw new Error(`password must be at least ${String(MIN_PASSWORD_LENGTH)} characters`)
+  }
   const salt = randomBytes(SALT_BYTES)
   const hash = await derive(password, salt, params)
   return {

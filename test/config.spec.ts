@@ -6,7 +6,7 @@ describe('Config schema', () => {
   it('applies defaults for an empty configuration', () => {
     const config = parseConfig({})
 
-    expect(config.mode).toBe('gate')
+    expect(config.mode).toBe('observe')
     expect(config.loginPath).toBe(DEFAULT_LOGIN_PATH)
     expect(config.ldap.enabled).toBe(false)
     expect(config.ldap.userSearchFilter).toBe('(uid={{username}})')
@@ -35,10 +35,14 @@ describe('Config schema', () => {
 })
 
 describe('validateConfig', () => {
-  it('requires at least one credential backend', () => {
-    expect(validateConfig(parseConfig({}))).toContain(
-      'at least one backend must be enabled: local or ldap',
+  it('requires a backend in gate mode', () => {
+    expect(validateConfig(parseConfig({ mode: 'gate' }))).toContain(
+      'gate mode requires at least one backend: enable local or ldap',
     )
+  })
+
+  it('accepts a backend-less observe mount', () => {
+    expect(validateConfig(parseConfig({}))).toEqual([])
   })
 
   it('accepts a complete LDAPS configuration', () => {

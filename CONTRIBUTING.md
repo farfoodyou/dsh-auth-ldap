@@ -49,20 +49,27 @@ Rebase onto `main` before requesting review; do not merge `main` into a branch t
 Check the last commit message locally:
 
 ```sh
-npm run commitlint -- --from HEAD~1 --to HEAD
+pnpm exec commitlint --from HEAD~1 --to HEAD
 ```
+
+## Package manager
+
+This repository uses **pnpm** only. `packageManager` in `package.json` pins the version, and
+`pnpm-lock.yaml` is committed; `package-lock.json` and `yarn.lock` must never appear in a pull request.
+Run commands through `pnpm` (`pnpm run build`, `pnpm exec commitlint`) so that every contributor and CI
+resolve the same dependency graph.
 
 ## Pull requests
 
 Before opening one:
 
 ```sh
-npm run verify
+pnpm verify
 ```
 
 The checklist in `.github/PULL_REQUEST_TEMPLATE.md` mirrors the review criteria:
 
-1. `npm run verify` passes locally.
+1. `pnpm verify` passes locally.
 2. Behaviour changes have tests; bug fixes have a regression test.
 3. `CHANGELOG.md` has an entry under `Unreleased` when the change is user-visible.
 4. README (both languages) is updated when configuration, installation, or status changes.
@@ -78,7 +85,7 @@ commit subject. Force-pushing to `main` is forbidden.
 1. Update `CHANGELOG.md`: move `Unreleased` entries into a version section with today's date.
 2. Bump `version` in `package.json` (semver: behaviour change -> minor while pre-1.0, fix -> patch).
 3. Tag `v<version>` on `main` and push the tag.
-4. Publish with `npm publish` (requires 2FA); the `prepack` script builds `lib/`.
+4. Publish with `pnpm publish` (requires 2FA); the `prepack` script builds `lib/` with `tsc`.
 5. Open a pull request that moves `Unreleased` back to an empty section.
 
 ## Documentation layout

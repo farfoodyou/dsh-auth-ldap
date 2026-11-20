@@ -46,20 +46,26 @@ chore/<短横线简述>     工具链、依赖、CI
 本地校验最近一次提交：
 
 ```sh
-npm run commitlint -- --from HEAD~1 --to HEAD
+pnpm exec commitlint --from HEAD~1 --to HEAD
 ```
+
+## 包管理器
+
+本仓库**只使用 pnpm**。版本由 `package.json` 的 `packageManager` 锁定，`pnpm-lock.yaml` 入库；
+`package-lock.json` 与 `yarn.lock` 一律不得出现在 pull request 中。请通过 `pnpm` 执行命令
+（`pnpm run build`、`pnpm exec commitlint`），以保证所有贡献者与 CI 解析到同一份依赖图。
 
 ## Pull request
 
 提交前先运行：
 
 ```sh
-npm run verify
+pnpm verify
 ```
 
 `.github/PULL_REQUEST_TEMPLATE.md` 中的检查清单就是评审标准：
 
-1. 本地 `npm run verify` 通过。
+1. 本地 `pnpm verify` 通过。
 2. 行为变更带测试；缺陷修复带回归测试。
 3. 用户可见的变更在 `CHANGELOG.md` 的 `Unreleased` 下有条目。
 4. 配置、安装方式或状态变化时，两个语言的 README 同步更新。
@@ -74,7 +80,7 @@ npm run verify
 1. 更新 `CHANGELOG.md`：把 `Unreleased` 条目移入带今天日期的版本小节。
 2. 修改 `package.json` 的 `version`（semver：pre-1.0 阶段行为变更升 minor，修复升 patch）。
 3. 在 `main` 上打 `v<version>` 标签并推送。
-4. `npm publish` 发布（需 2FA）；`prepack` 脚本会构建 `lib/`。
+4. `pnpm publish` 发布（需 2FA）；`prepack` 脚本会用 `tsc` 构建 `lib/`。
 5. 开一个 pull request，把 `Unreleased` 恢复为空小节。
 
 ## 文档结构

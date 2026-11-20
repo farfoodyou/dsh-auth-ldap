@@ -1,7 +1,7 @@
 # Roadmap
 
 Each milestone is a release. "Done" means: code merged with tests, README and CHANGELOG updated,
-`npm run verify` green in CI, and the manual smoke check performed on a local `web` profile.
+`pnpm verify` green in CI, and the manual smoke check performed on a local `web` profile.
 
 ## M0 - scaffolding (released as 0.1.0)
 

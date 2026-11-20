@@ -14,7 +14,7 @@
 
 ## Checklist
 
-- [ ] `npm run verify` passes locally
+- [ ] `pnpm verify` passes locally
 - [ ] Behaviour changes have tests; bug fixes have a regression test
 - [ ] `CHANGELOG.md` updated under `Unreleased` (user-visible changes)
 - [ ] `README.md` and `README.zh.md` updated together (install, configuration, status)

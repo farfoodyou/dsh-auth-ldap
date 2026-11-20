@@ -8,6 +8,12 @@ behaviour change increments the minor version and an internal change increments 
 
 ## [Unreleased]
 
+### Changed
+
+- Build and development scripts use pnpm 12, pinned through `packageManager`; `pnpm-lock.yaml` replaces
+  `package-lock.json` and CI installs with `--frozen-lockfile`.
+- README (both languages) documents pnpm-based install, usage, and development commands.
+
 ## [0.1.0] - 2026-11-20
 
 ### Added

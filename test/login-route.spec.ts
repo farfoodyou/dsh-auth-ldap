@@ -48,7 +48,7 @@ function request(init: {
   return stream as unknown as IncomingMessage
 }
 
-async function fixture() {
+async function fixture(extra: Record<string, unknown> = {}) {
   const directory = await mkdtemp(join(tmpdir(), 'dsh-auth-ldap-'))
   const usersPath = join(directory, 'users.json')
   const file: UsersFile = upsertAccount(
@@ -63,7 +63,11 @@ async function fixture() {
   )
   await saveUsers(usersPath, file)
 
-  const config = parseConfig({ mode: 'gate', local: { enabled: true, usersFile: usersPath } })
+  const config = parseConfig({
+    mode: 'gate',
+    local: { enabled: true, usersFile: usersPath },
+    ...extra,
+  })
   const store = new SessionStore('')
   const cookie = new SessionCookie(randomBytes(32), 'dsh_auth_ldap', false, 3600)
   const warnings: string[] = []
@@ -171,6 +175,46 @@ describe('createLoginHandler', () => {
     )
 
     expect(captured.status).toBe(403)
+  })
+
+  it('accepts an allowlisted origin when the posted host differs', async () => {
+    const { handler, store } = await fixture({
+      allowedOrigins: ['dsh.lab.hu', '192.168.8.100:3080'],
+    })
+    const captured: Captured = { headers: {} }
+
+    await handler(
+      request({
+        method: 'POST',
+        headers: {
+          ...formHeaders,
+          host: '192.168.8.100:3080',
+          origin: 'https://dsh.lab.hu',
+        },
+        body: form({ username: 'alice', password: 'valid-password' }),
+      }),
+      response(captured) as never,
+    )
+
+    expect(captured.status).toBe(303)
+    expect(store.size).toBe(1)
+  })
+
+  it('still rejects an origin outside the allowlist', async () => {
+    const { handler, store } = await fixture({ allowedOrigins: ['dsh.lab.hu'] })
+    const captured: Captured = { headers: {} }
+
+    await handler(
+      request({
+        method: 'POST',
+        headers: { ...formHeaders, host: '192.168.8.100:3080', origin: 'https://evil.example' },
+        body: form({ username: 'alice', password: 'valid-password' }),
+      }),
+      response(captured) as never,
+    )
+
+    expect(captured.status).toBe(403)
+    expect(store.size).toBe(0)
   })
 
   it('rejects a non-form content type', async () => {

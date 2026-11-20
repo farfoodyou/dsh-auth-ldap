@@ -93,6 +93,8 @@ export interface Config {
   statusPath: string
   /** Reverse proxies whose forwarded client-IP headers are trusted. */
   trustedProxyCidrs: string[]
+  /** Extra `host[:port]` origins accepted for the login POST (proxy rewrites, dual entry points). */
+  allowedOrigins: string[]
   /** Header carrying the client address when the peer is a trusted proxy. */
   clientIpHeader: string
   /** Local account backend. */
@@ -122,6 +124,7 @@ export const Config: z<Config> = z.object({
   logoutPath: z.string().default(DEFAULT_LOGOUT_PATH),
   statusPath: z.string().default(DEFAULT_STATUS_PATH),
   trustedProxyCidrs: z.array(z.string()).default([]),
+  allowedOrigins: z.array(z.string()).default([]),
   clientIpHeader: z.string().default('x-forwarded-for'),
   local: z.object({
     enabled: z.boolean().default(false),

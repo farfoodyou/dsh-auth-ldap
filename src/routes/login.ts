@@ -148,12 +148,17 @@ async function readBody(request: IncomingMessage): Promise<string | undefined> {
  * @param request - incoming request.
  * @returns whether the origin is acceptable.
  */
-function originAllowed(request: IncomingMessage): boolean {
+function originAllowed(request: IncomingMessage, allowedOrigins: readonly string[]): boolean {
   const origin = request.headers.origin
   const host = request.headers.host
   if (origin === undefined || host === undefined) return true
   try {
-    return new URL(origin).host === host
+    const originHost = new URL(origin).host
+    if (originHost === host) return true
+    // Behind a proxy that rewrites `Host`, or when the UI is reachable both by
+    // name and by address, the page origin and the posted host differ. An
+    // explicit allowlist keeps that usable without accepting arbitrary sites.
+    return allowedOrigins.some((allowed) => allowed.toLowerCase() === originHost.toLowerCase())
   } catch {
     return false
   }
@@ -221,8 +226,14 @@ export function createLoginHandler(
       return
     }
 
-    if (!originAllowed(request)) {
-      warn('login rejected: cross-origin form post')
+    if (!originAllowed(request, config.allowedOrigins)) {
+      warn(
+        `login rejected: cross-origin form post (origin=${String(
+          request.headers.origin,
+        )} host=${String(request.headers.host)} xfp=${String(
+          request.headers['x-forwarded-proto'],
+        )})`,
+      )
       render(response, authority, '/', 'Sign-in failed.', 403)
       return
     }

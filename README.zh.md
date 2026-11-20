@@ -139,7 +139,8 @@ M1 落地之前，插件只提供状态路由；界面仍然只靠启动 token �
 | `session.secure`                                  | `true`                         | 是否输出 `Secure` 属性                             |
 
 配置校验分两层：schema 在加载时拒绝形状与范围错误；`validateConfig` 拒绝组合错误，例如
-「启用 LDAP 但没有搜索 Base DN」「明文 LDAP 且未开 STARTTLS」。
+「启用 LDAP 但没有搜索 Base DN」「明文 LDAP 且未开 STARTTLS」。这类错误会中止挂载。而部署异味
+（没有配置任何后端、只有本地账户、关闭了证书校验）只记警告，插件照常挂载，便于在运行中的实例上排查。
 
 ## 安全模型
 

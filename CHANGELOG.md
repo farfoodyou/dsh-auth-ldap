@@ -8,11 +8,21 @@ behaviour change increments the minor version and an internal change increments 
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-20
+
 ### Changed
 
 - Build and development scripts use pnpm 12, pinned through `packageManager`; `pnpm-lock.yaml` replaces
   `package-lock.json` and CI installs with `--frozen-lockfile`.
 - README (both languages) documents pnpm-based install, usage, and development commands.
+- `mode` defaults to `observe` until the gate ships in 0.2.0, so the documented default no longer
+  claims enforcement this milestone does not implement.
+
+### Fixed
+
+- A profile can mount the plugin without any credential backend configured: missing backends,
+  local-only deployments, and disabled certificate verification are logged as warnings instead of
+  aborting the mount, which previously left the plugin inactive after `dsh plugin add`.
 
 ## [0.1.0] - 2026-11-20
 
@@ -31,5 +41,6 @@ behaviour change increments the minor version and an internal change increments 
 - Documentation: bilingual README, contributing guide, security policy, design note for the gate,
   two ADRs, and a milestone roadmap.
 
-[Unreleased]: https://github.com/farfoodyou/dsh-auth-ldap/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/farfoodyou/dsh-auth-ldap/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/farfoodyou/dsh-auth-ldap/releases/tag/v0.1.1
 [0.1.0]: https://github.com/farfoodyou/dsh-auth-ldap/releases/tag/v0.1.0

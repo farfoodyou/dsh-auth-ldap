@@ -120,33 +120,35 @@ Until M1 lands, the plugin only serves the status route; the GUI still admits by
 
 ## Configuration
 
-| Key                                               | Default                        | Meaning                                                              |
-| ------------------------------------------------- | ------------------------------ | -------------------------------------------------------------------- |
-| `mode`                                            | `gate`                         | `gate` denies unauthenticated requests; `observe` only logs          |
-| `publicHost`                                      | `""`                           | Host shown on the login page; empty falls back to the request `Host` |
-| `loginPath` / `logoutPath`                        | `/auth/login` / `/auth/logout` | Gate endpoints                                                       |
-| `statusPath`                                      | `/auth-ldap/status`            | Unauthenticated status document                                      |
-| `trustedProxyCidrs`                               | `[]`                           | Proxies whose forwarded client-IP header is trusted                  |
-| `local.enabled`                                   | `false`                        | Enable the local account file                                        |
-| `local.usersFile`                                 | `""`                           | Absolute path to the account file                                    |
-| `ldap.enabled`                                    | `false`                        | Enable directory login                                               |
-| `ldap.url`                                        | `""`                           | `ldaps://host[:port]` or `ldap://host[:port]`                        |
-| `ldap.userSearchBase`                             | `""`                           | Base DN searched for the login account                               |
-| `ldap.userSearchFilter`                           | `(uid={{username}})`           | User filter; `{{username}}` is RFC 4515 escaped                      |
-| `ldap.bindDn` / `ldap.bindPasswordEnv`            | `""`                           | Service account for the search; empty means anonymous                |
-| `ldap.displayNameAttribute`                       | `displayName`                  | Attribute used as the display name                                   |
-| `ldap.groupSearchBase` / `ldap.groupSearchFilter` | `""` / `(member={{dn}})`       | Group mapping query                                                  |
-| `ldap.adminGroups`                                | `[]`                           | Groups whose members get the `admin` role                            |
-| `ldap.startTls`                                   | `false`                        | Upgrade `ldap://` with STARTTLS                                      |
-| `ldap.rejectUnauthorized`                         | `true`                         | Verify the directory certificate                                     |
-| `ldap.timeoutMs`                                  | `10000`                        | Connect and search timeout                                           |
-| `session.cookieName`                              | `dsh_auth_ldap`                | Session cookie name                                                  |
-| `session.ttlSeconds`                              | `43200`                        | Absolute session lifetime                                            |
-| `session.secure`                                  | `true`                         | Emit the `Secure` attribute                                          |
+| Key                                               | Default                        | Meaning                                                                                                   |
+| ------------------------------------------------- | ------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| `mode`                                            | `observe`                      | `gate` denies unauthenticated requests; `observe` only logs. Flips to `gate` in 0.2.0 when the gate ships |
+| `publicHost`                                      | `""`                           | Host shown on the login page; empty falls back to the request `Host`                                      |
+| `loginPath` / `logoutPath`                        | `/auth/login` / `/auth/logout` | Gate endpoints                                                                                            |
+| `statusPath`                                      | `/auth-ldap/status`            | Unauthenticated status document                                                                           |
+| `trustedProxyCidrs`                               | `[]`                           | Proxies whose forwarded client-IP header is trusted                                                       |
+| `local.enabled`                                   | `false`                        | Enable the local account file                                                                             |
+| `local.usersFile`                                 | `""`                           | Absolute path to the account file                                                                         |
+| `ldap.enabled`                                    | `false`                        | Enable directory login                                                                                    |
+| `ldap.url`                                        | `""`                           | `ldaps://host[:port]` or `ldap://host[:port]`                                                             |
+| `ldap.userSearchBase`                             | `""`                           | Base DN searched for the login account                                                                    |
+| `ldap.userSearchFilter`                           | `(uid={{username}})`           | User filter; `{{username}}` is RFC 4515 escaped                                                           |
+| `ldap.bindDn` / `ldap.bindPasswordEnv`            | `""`                           | Service account for the search; empty means anonymous                                                     |
+| `ldap.displayNameAttribute`                       | `displayName`                  | Attribute used as the display name                                                                        |
+| `ldap.groupSearchBase` / `ldap.groupSearchFilter` | `""` / `(member={{dn}})`       | Group mapping query                                                                                       |
+| `ldap.adminGroups`                                | `[]`                           | Groups whose members get the `admin` role                                                                 |
+| `ldap.startTls`                                   | `false`                        | Upgrade `ldap://` with STARTTLS                                                                           |
+| `ldap.rejectUnauthorized`                         | `true`                         | Verify the directory certificate                                                                          |
+| `ldap.timeoutMs`                                  | `10000`                        | Connect and search timeout                                                                                |
+| `session.cookieName`                              | `dsh_auth_ldap`                | Session cookie name                                                                                       |
+| `session.ttlSeconds`                              | `43200`                        | Absolute session lifetime                                                                                 |
+| `session.secure`                                  | `true`                         | Emit the `Secure` attribute                                                                               |
 
 Configuration is validated twice: the schema rejects wrong shapes and ranges at load time, and
 `validateConfig` rejects combinations such as "LDAP enabled but no search base" or "cleartext LDAP
-without STARTTLS".
+without STARTTLS". Those failures stop the mount. Deployment smells - no backend configured, local
+accounts as the only backend, disabled certificate verification - are logged as warnings so the
+plugin still mounts and can be diagnosed from a running instance.
 
 ## Security model
 

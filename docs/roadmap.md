@@ -9,7 +9,8 @@ Each milestone is a release. "Done" means: code merged with tests, README and CH
 - [x] Configuration schema and cross-field validation
 - [x] Plugin entry with a `PrincipalMap` entry for `dsh-auth-ldap:user`
 - [x] Unauthenticated `/auth-ldap/status` route
-- [ ] Install into a real profile and record the smoke-test output in the pull request
+- [x] Install into a real profile: mounted in a local `web` profile, `GET /auth-ldap/status` returned
+      `200` with `mode: observe` both directly and through the reverse proxy
 
 ## M1 - gate, sessions, local accounts (0.2.0)
 

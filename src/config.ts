@@ -14,6 +14,10 @@ import z from '@deepseek-ai/schemastery'
  * - `gate`: deny the request (phase 1 behaviour).
  * - `observe`: admit the request and log the decision; used to stage a rollout
  *   without locking anyone out.
+ *
+ * The default is `observe` until the gate itself ships (M1): this milestone has
+ * no admission logic, so defaulting to `gate` would describe a guarantee the
+ * code does not provide.
  */
 export type GateMode = 'gate' | 'observe'
 
@@ -98,7 +102,7 @@ export const DEFAULT_STATUS_PATH = '/auth-ldap/status'
 
 /** Validated configuration schema; loading fails on unknown or invalid values. */
 export const Config: z<Config> = z.object({
-  mode: z.union(['gate', 'observe'] as const).default('gate'),
+  mode: z.union(['gate', 'observe'] as const).default('observe'),
   publicHost: z.string().default(''),
   loginPath: z.string().default(DEFAULT_LOGIN_PATH),
   logoutPath: z.string().default(DEFAULT_LOGOUT_PATH),
@@ -162,8 +166,8 @@ const DIRECTORY_URL_PATTERN = /^ldaps?:\/\/[^\s/]+$/
 export function validateConfig(config: Config): string[] {
   const problems: string[] = []
 
-  if (!config.local.enabled && !config.ldap.enabled) {
-    problems.push('at least one backend must be enabled: local or ldap')
+  if (!config.local.enabled && !config.ldap.enabled && config.mode === 'gate') {
+    problems.push('gate mode requires at least one backend: enable local or ldap')
   }
 
   if (config.local.enabled && config.local.usersFile.trim() === '') {
@@ -210,4 +214,32 @@ export function validateConfig(config: Config): string[] {
   }
 
   return problems
+}
+
+/**
+ * Report configuration facts that are worth a log line but must not stop the mount.
+ *
+ * These are deployment smells rather than errors: a plugin that refuses to load
+ * cannot be diagnosed from the running instance.
+ * @param config - validated configuration.
+ * @returns human-readable warnings; an empty array means nothing to report.
+ */
+export function configWarnings(config: Config): string[] {
+  const warnings: string[] = []
+
+  if (!config.local.enabled && !config.ldap.enabled) {
+    warnings.push(
+      'no credential backend is enabled; nothing can authenticate until one is configured',
+    )
+  }
+
+  if (config.mode === 'gate' && !config.ldap.enabled && config.local.enabled) {
+    warnings.push('local accounts are the only backend; a lost password file locks everyone out')
+  }
+
+  if (config.ldap.enabled && !config.ldap.rejectUnauthorized) {
+    warnings.push('ldap.rejectUnauthorized is disabled; the directory certificate is not verified')
+  }
+
+  return warnings
 }

@@ -10,7 +10,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-host-webserver'
 
-import { Config, validateConfig } from './config.js'
+import { Config, configWarnings, validateConfig } from './config.js'
 import { createStatusHandler } from './routes/status.js'
 
 /** Stable Cordis plugin name; also the row id in `cordis.patch.yml`. */
@@ -19,7 +19,7 @@ export const name = 'dsh-auth-ldap'
 /** The gate owns HTTP routes, so it requires the web server service. */
 export const inject = ['webServer'] as const
 
-export { Config, validateConfig }
+export { Config, configWarnings, validateConfig }
 export type {
   Config as AuthConfig,
   GateMode,
@@ -35,9 +35,10 @@ export type { StatusPayload } from './routes/status.js'
 /**
  * Mount the plugin into the composing profile.
  *
- * Configuration is validated before any route is registered so that a
- * misconfigured deployment fails at load time instead of at the first login
- * attempt.
+ * Invalid configuration stops the mount so that a broken deployment fails at
+ * load time instead of at the first login attempt. Deployment smells are logged
+ * and the mount continues, because a plugin that refuses to load cannot be
+ * diagnosed from the running instance.
  * @param ctx - plugin scope owning this plugin's registrations.
  * @param config - validated configuration supplied by the loader.
  * @throws when the configuration is internally inconsistent.
@@ -47,6 +48,8 @@ export function apply(ctx: Context, config: Config): void {
   if (problems.length > 0) {
     throw new Error(`dsh-auth-ldap: invalid configuration: ${problems.join('; ')}`)
   }
+
+  for (const warning of configWarnings(config)) ctx.logger.warn('dsh-auth-ldap: %s', warning)
 
   ctx.inject(['webServer'], (webCtx) => {
     webCtx.effect(

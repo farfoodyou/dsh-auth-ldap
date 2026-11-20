@@ -1,6 +1,6 @@
 {
   "name": "dsh-auth-ldap",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Authentication gate for DeepSeek Harness web profiles: local accounts and LDAP/Active Directory bind behind one login page.",
   "keywords": [
     "dsh",
@@ -71,6 +71,7 @@
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.1.0",
+    "@deepseek-ai/dsh-client-connection": ">=0.2.2-rc.1",
     "@deepseek-ai/dsh-host-webserver": ">=0.2.2-rc.1",
     "@deepseek-ai/dsh-typert-protocol": ">=0.2.2-rc.1"
   },
@@ -78,6 +79,7 @@
     "@commitlint/cli": "^21.0.2",
     "@commitlint/config-conventional": "^21.0.2",
     "@deepseek-ai/cordis": "^4.1.0",
+    "@deepseek-ai/dsh-client-connection": "0.2.2-rc.5",
     "@deepseek-ai/dsh-host-webserver": "0.2.2-rc.5",
     "@deepseek-ai/dsh-typert-protocol": "0.2.2-rc.5",
     "@eslint/js": "^10.0.0",
@@ -87,5 +89,8 @@
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.73.0",
     "vitest": "^5.1.1"
+  },
+  "bin": {
+    "dsh-auth-ldap": "lib/cli.js"
   }
 }

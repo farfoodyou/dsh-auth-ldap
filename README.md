@@ -6,9 +6,9 @@ Authentication gate for [DeepSeek Harness](https://github.com/deepseek-ai/deepse
 profiles: sign in with a **local account** or an **LDAP / Active Directory** account, through one login
 page and one configuration.
 
-> **Status: developer preview.** Milestone M0 (repository scaffolding, configuration schema, plugin
-> entry) is complete. The gate itself lands in M1 and the directory backend in M2; see
-> [docs/roadmap.md](docs/roadmap.md). Do not put this in front of a production instance yet.
+> **Status: developer preview.** Milestone M1 is shipped: a real gate with local accounts, signed
+> sessions, throttled login, and logout. The directory backend lands in M2 (0.3.0); `ldap.*`
+> configuration is validated but not yet used. See [docs/roadmap.md](docs/roadmap.md).
 
 ## Why this exists
 
@@ -29,11 +29,16 @@ them can verify against a directory. `dsh-auth-ldap` fills that gap without fork
 
 **Phase 1 - authentication gate**
 
-- One login page, two credential backends: local password file, LDAP/AD `search-then-bind`.
-- Group mapping: directory groups map to `admin` / `operator` / `viewer` roles.
-- Signed, `HttpOnly` session cookies with a server-side session table (revocable, TTL-bounded).
-- Every HTTP route, `/api` call, and WebSocket upgrade is gated, including plugin-registered routes.
+- One login page with local accounts (`scrypt` records in a JSON file). Directory accounts
+  (`search-then-bind`) follow in M2.
+- Signed, `HttpOnly`, `SameSite=Lax` session cookies backed by a server-side table: revocable,
+  TTL-bounded, and persisted so a restart does not sign everyone out.
+- Page documents and the `/api` transport are both gated; `/api` keeps its own host fence.
+- Throttled login: five failures per account or address impose a five-minute cooldown, and the failure
+  response never reveals whether an account exists.
 - `observe` mode: log the decision without denying, so a rollout can be staged.
+- The process launch token keeps working as break-glass access, so a lost account file cannot lock the
+  operator out of their own instance.
 - Unauthenticated `/auth-ldap/status` document for smoke tests and monitoring.
 
 **Phase 2 - per-user isolation (separate milestone)**
@@ -120,29 +125,30 @@ Until M1 lands, the plugin only serves the status route; the GUI still admits by
 
 ## Configuration
 
-| Key                                               | Default                        | Meaning                                                                                                   |
-| ------------------------------------------------- | ------------------------------ | --------------------------------------------------------------------------------------------------------- |
-| `mode`                                            | `observe`                      | `gate` denies unauthenticated requests; `observe` only logs. Flips to `gate` in 0.2.0 when the gate ships |
-| `publicHost`                                      | `""`                           | Host shown on the login page; empty falls back to the request `Host`                                      |
-| `loginPath` / `logoutPath`                        | `/auth/login` / `/auth/logout` | Gate endpoints                                                                                            |
-| `statusPath`                                      | `/auth-ldap/status`            | Unauthenticated status document                                                                           |
-| `trustedProxyCidrs`                               | `[]`                           | Proxies whose forwarded client-IP header is trusted                                                       |
-| `local.enabled`                                   | `false`                        | Enable the local account file                                                                             |
-| `local.usersFile`                                 | `""`                           | Absolute path to the account file                                                                         |
-| `ldap.enabled`                                    | `false`                        | Enable directory login                                                                                    |
-| `ldap.url`                                        | `""`                           | `ldaps://host[:port]` or `ldap://host[:port]`                                                             |
-| `ldap.userSearchBase`                             | `""`                           | Base DN searched for the login account                                                                    |
-| `ldap.userSearchFilter`                           | `(uid={{username}})`           | User filter; `{{username}}` is RFC 4515 escaped                                                           |
-| `ldap.bindDn` / `ldap.bindPasswordEnv`            | `""`                           | Service account for the search; empty means anonymous                                                     |
-| `ldap.displayNameAttribute`                       | `displayName`                  | Attribute used as the display name                                                                        |
-| `ldap.groupSearchBase` / `ldap.groupSearchFilter` | `""` / `(member={{dn}})`       | Group mapping query                                                                                       |
-| `ldap.adminGroups`                                | `[]`                           | Groups whose members get the `admin` role                                                                 |
-| `ldap.startTls`                                   | `false`                        | Upgrade `ldap://` with STARTTLS                                                                           |
-| `ldap.rejectUnauthorized`                         | `true`                         | Verify the directory certificate                                                                          |
-| `ldap.timeoutMs`                                  | `10000`                        | Connect and search timeout                                                                                |
-| `session.cookieName`                              | `dsh_auth_ldap`                | Session cookie name                                                                                       |
-| `session.ttlSeconds`                              | `43200`                        | Absolute session lifetime                                                                                 |
-| `session.secure`                                  | `true`                         | Emit the `Secure` attribute                                                                               |
+| Key                                               | Default                        | Meaning                                                                                    |
+| ------------------------------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------ |
+| `mode`                                            | `gate`                         | `gate` denies unauthenticated requests; `observe` only logs decisions                      |
+| `publicHost`                                      | `""`                           | Host shown on the login page; empty falls back to the request `Host`                       |
+| `loginPath` / `logoutPath`                        | `/auth/login` / `/auth/logout` | Gate endpoints                                                                             |
+| `statusPath`                                      | `/auth-ldap/status`            | Unauthenticated status document                                                            |
+| `trustedProxyCidrs`                               | `[]`                           | Proxies whose forwarded client-IP header is trusted                                        |
+| `local.enabled`                                   | `false`                        | Enable the local account file                                                              |
+| `local.usersFile`                                 | `""`                           | Absolute path to the account file                                                          |
+| `ldap.enabled`                                    | `false`                        | Enable directory login                                                                     |
+| `ldap.url`                                        | `""`                           | `ldaps://host[:port]` or `ldap://host[:port]`                                              |
+| `ldap.userSearchBase`                             | `""`                           | Base DN searched for the login account                                                     |
+| `ldap.userSearchFilter`                           | `(uid={{username}})`           | User filter; `{{username}}` is RFC 4515 escaped                                            |
+| `ldap.bindDn` / `ldap.bindPasswordEnv`            | `""`                           | Service account for the search; empty means anonymous                                      |
+| `ldap.displayNameAttribute`                       | `displayName`                  | Attribute used as the display name                                                         |
+| `ldap.groupSearchBase` / `ldap.groupSearchFilter` | `""` / `(member={{dn}})`       | Group mapping query                                                                        |
+| `ldap.adminGroups`                                | `[]`                           | Groups whose members get the `admin` role                                                  |
+| `ldap.startTls`                                   | `false`                        | Upgrade `ldap://` with STARTTLS                                                            |
+| `ldap.rejectUnauthorized`                         | `true`                         | Verify the directory certificate                                                           |
+| `ldap.timeoutMs`                                  | `10000`                        | Connect and search timeout                                                                 |
+| `session.cookieName`                              | `dsh_auth_ldap`                | Session cookie name                                                                        |
+| `session.ttlSeconds`                              | `43200`                        | Absolute session lifetime                                                                  |
+| `session.secure`                                  | `true`                         | Emit the `Secure` attribute                                                                |
+| `storage.dir`                                     | `""`                           | Directory for the signing key and session table; empty uses `$DSH_HOME/storages/auth-ldap` |
 
 Configuration is validated twice: the schema rejects wrong shapes and ranges at load time, and
 `validateConfig` rejects combinations such as "LDAP enabled but no search base" or "cleartext LDAP
@@ -183,12 +189,15 @@ committed, and CI installs with `--frozen-lockfile`.
 Layout:
 
 ```
-src/config.ts        schema, defaults, cross-field validation
+src/config.ts        schema, defaults, cross-field validation, deployment warnings
+src/gate.ts          admission: wraps connection.admit / connection.authorizeIndex
+src/session.ts       signed cookie codec, session table, signing-key loader
+src/users.ts         account file model and local credential verification
+src/password.ts      scrypt hashing and constant-time verification
+src/login-page.ts    the login document
+src/routes/          login, logout, status handlers
+src/cli.ts           `dsh-auth-ldap` account maintenance
 src/principal.ts     the plugin's PrincipalMap entry
-src/routes/          HTTP handlers
-src/gate/            request admission (M1)
-src/session/         signed cookies + session table (M1)
-src/backends/        local account file, LDAP bind (M1, M2)
 test/                unit tests, mirroring src/
 docs/design/         design notes
 docs/adr/            architecture decision records

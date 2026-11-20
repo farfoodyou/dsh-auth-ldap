@@ -12,15 +12,18 @@ Each milestone is a release. "Done" means: code merged with tests, README and CH
 - [x] Install into a real profile: mounted in a local `web` profile, `GET /auth-ldap/status` returned
       `200` with `mode: observe` both directly and through the reverse proxy
 
-## M1 - gate, sessions, local accounts (0.2.0)
+## M1 - gate, sessions, local accounts (0.2.0, shipped)
 
-- [ ] Request guard: wrap `register`, `registerFallback`, and upgrade registration; restore on dispose
-- [ ] Public path allowlist answered before admission
-- [ ] Signed cookie + session store with revocation and restart persistence
-- [ ] Login/logout routes with `Origin`/`Host` checks, body caps, and uniform failures
-- [ ] Local account file backend (scrypt) and `user add|passwd|disable|list` CLI
-- [ ] `observe` mode logging
-- [ ] Integration tests against an in-process web server stub
+- [x] Admission wrap over `connection.admit` and `connection.authorizeIndex`, restored on dispose.
+      Route registration is _not_ wrapped: the published 0.2.2-rc.x release has no per-route `auth`
+      flag and no global request event, and it admits `/api` before any plugin can intervene.
+- [x] Public path allowlist (`loginPath`, `logoutPath`, `statusPath`) plus break-glass launch token
+- [x] Signed cookie + session store with revocation and restart persistence
+- [x] Login/logout routes with `Origin`/`Host` checks, body caps, uniform failures, and throttling
+- [x] Local account file backend (scrypt) and `add|passwd|disable|enable|list` CLI
+- [x] `observe` mode logging
+- [x] Unit coverage for the gate decisions, cookie codec, session store, password records, and handlers
+- [ ] Integration test against a real `web` profile in CI (currently a manual smoke step)
 
 ## M2 - directory backend (0.3.0)
 

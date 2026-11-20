@@ -4,17 +4,19 @@ import { configWarnings, parseConfig } from '../src/config.js'
 
 describe('configWarnings', () => {
   it('warns when no backend is enabled, without blocking the mount', () => {
-    expect(configWarnings(parseConfig({}))).toContain(
+    expect(configWarnings(parseConfig({ mode: 'observe' }))).toContain(
       'no credential backend is enabled; nothing can authenticate until one is configured',
     )
   })
 
-  it('stays quiet for a complete local configuration in observe mode', () => {
+  it('reports only the single-backend risk for a local-only deployment', () => {
     const config = parseConfig({
       local: { enabled: true, usersFile: '/var/lib/dsh/users.yaml' },
     })
 
-    expect(configWarnings(config)).toEqual([])
+    expect(configWarnings(config)).toEqual([
+      'local accounts are the only backend; a lost password file locks everyone out',
+    ])
   })
 
   it('warns that local accounts alone are a single point of failure in gate mode', () => {

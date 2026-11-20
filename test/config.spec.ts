@@ -6,7 +6,7 @@ describe('Config schema', () => {
   it('applies defaults for an empty configuration', () => {
     const config = parseConfig({})
 
-    expect(config.mode).toBe('observe')
+    expect(config.mode).toBe('gate')
     expect(config.loginPath).toBe(DEFAULT_LOGIN_PATH)
     expect(config.ldap.enabled).toBe(false)
     expect(config.ldap.userSearchFilter).toBe('(uid={{username}})')
@@ -42,7 +42,7 @@ describe('validateConfig', () => {
   })
 
   it('accepts a backend-less observe mount', () => {
-    expect(validateConfig(parseConfig({}))).toEqual([])
+    expect(validateConfig(parseConfig({ mode: 'observe' }))).toEqual([])
   })
 
   it('accepts a complete LDAPS configuration', () => {

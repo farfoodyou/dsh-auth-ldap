@@ -8,6 +8,35 @@ behaviour change increments the minor version and an internal change increments 
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-20
+
+### Added
+
+- Admission gate: `connection.admit` and `connection.authorizeIndex` are wrapped so page documents,
+  `/api` calls, and WebSocket upgrades require a session, while the process launch token keeps working
+  as break-glass access. Wraps are restored on dispose.
+- Login page, `POST` login, and `GET /auth/logout`, with `Origin`/`Host` checks, a 4 KiB body cap, a
+  uniform failure response, and a five-attempt / five-minute throttle per account and per address.
+- Signed session cookies (`HMAC-SHA256`, `HttpOnly`, `SameSite=Lax`, `Secure`) backed by a session table
+  that is revocable, TTL-bounded, and persisted across restarts.
+- Local account backend: scrypt records in a JSON file, constant-time verification, disabled accounts,
+  and a non-enumerable failure path.
+- `dsh-auth-ldap` CLI: `add`, `passwd`, `disable`, `enable`, `list`.
+- `storage.dir` configuration for the signing key and session table.
+
+### Changed
+
+- `mode` defaults to `gate` now that the gate exists; a gate mount without a usable backend still fails
+  with an actionable error.
+- Deployment smells (no backend, local-only, unimplemented directory backend, disabled certificate
+  verification) are logged as warnings instead of aborting the mount.
+
+### Known limitations
+
+- The directory backend is not implemented; `ldap.*` is validated and warns until 0.3.0.
+- Every session is admitted as the shared operator peer, because `dsh` rejects non-owner principals on
+  the `/api` fetch routes. Per-user identity belongs to phase 2.
+
 ## [0.1.1] - 2026-11-20
 
 ### Changed
@@ -41,6 +70,7 @@ behaviour change increments the minor version and an internal change increments 
 - Documentation: bilingual README, contributing guide, security policy, design note for the gate,
   two ADRs, and a milestone roadmap.
 
-[Unreleased]: https://github.com/farfoodyou/dsh-auth-ldap/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/farfoodyou/dsh-auth-ldap/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/farfoodyou/dsh-auth-ldap/releases/tag/v0.2.0
 [0.1.1]: https://github.com/farfoodyou/dsh-auth-ldap/releases/tag/v0.1.1
 [0.1.0]: https://github.com/farfoodyou/dsh-auth-ldap/releases/tag/v0.1.0

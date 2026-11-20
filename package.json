@@ -81,7 +81,7 @@
     "@deepseek-ai/dsh-host-webserver": "0.2.2-rc.5",
     "@deepseek-ai/dsh-typert-protocol": "0.2.2-rc.5",
     "@eslint/js": "^10.0.0",
-    "@types/node": "^24.0.0",
+    "@types/node": "^26.6.6",
     "eslint": "^10.15.0",
     "prettier": "^3.10.1",
     "typescript": "^5.9.3",

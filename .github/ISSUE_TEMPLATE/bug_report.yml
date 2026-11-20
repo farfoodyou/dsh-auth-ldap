@@ -1,0 +1,63 @@
+name: Bug report
+description: Something does not behave as documented.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include passwords, bind credentials, real hostnames, or internal DNs.
+        Security problems go through SECURITY.md, not this form.
+  - type: input
+    id: plugin-version
+    attributes:
+      label: dsh-auth-ldap version
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: dsh-version
+    attributes:
+      label: dsh version
+      description: Output of `dsh --version`.
+      placeholder: 0.2.2-rc.1
+    validations:
+      required: true
+  - type: dropdown
+    id: backend
+    attributes:
+      label: Credential backend involved
+      options:
+        - local account file
+        - LDAP / Active Directory
+        - both
+        - not backend related (mounting, configuration, gate)
+    validations:
+      required: true
+  - type: textarea
+    id: status
+    attributes:
+      label: Status document
+      description: Output of `curl -s http://127.0.0.1:3080/auth-ldap/status`.
+      render: json
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      placeholder: |
+        1. Configure ...
+        2. Open ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Remove credentials, cookies, and tokens first.
+      render: text

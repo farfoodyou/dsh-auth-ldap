@@ -49,18 +49,22 @@ principal. It is deliberately out of scope here; see
 - `dsh >= 0.2.2-rc.1`. `dsh` is pre-stable, so pin a tested range before relying on it.
 - An LDAP v3 directory (OpenLDAP, LLDAP, 389 DS, Active Directory) reachable over LDAPS or STARTTLS.
 
+Developing the plugin also needs **pnpm 12**, pinned through `packageManager` in `package.json`. Enable
+Corepack once (`corepack enable`) and `pnpm` resolves to the pinned version automatically; or install it
+directly with `npm i -g pnpm@12`.
+
 ## Install
 
 ```sh
-# from the npm registry (once published)
-dsh plugin --profile web add dsh-auth-ldap
-
-# from a git checkout
-dsh plugin --profile web add github:<owner>/dsh-auth-ldap
+pnpm dlx @deepseek-ai/dsh plugin --profile web add dsh-auth-ldap   # from the npm registry (once published)
+pnpm dlx @deepseek-ai/dsh plugin --profile web add github:<owner>/dsh-auth-ldap   # from a git checkout
 ```
 
 The package declares `dsh.bundle.patch`, so `dsh plugin add` inserts the plugin row into the profile
-automatically. Deployment values live in the profile's user layer:
+automatically. If `dsh` is already on your `PATH`, drop the `pnpm dlx @deepseek-ai/dsh` prefix and call
+`dsh plugin ...` directly.
+
+Deployment values live in the profile's user layer:
 
 ```yaml
 # $DSH_HOME/profiles/web/cordis.patch.yml
@@ -87,6 +91,32 @@ Restart the profile after editing the user layer, then check the deployment:
 ```sh
 curl -s http://127.0.0.1:3080/auth-ldap/status
 ```
+
+## Usage
+
+Start the profile the plugin was added to:
+
+```sh
+dsh web                      # same as: dsh --profile web
+```
+
+Then, in the browser:
+
+| Step                 | What happens                                                                                    |
+| -------------------- | ----------------------------------------------------------------------------------------------- |
+| Open the printed URL | `dsh` prints `http://127.0.0.1:3080/?token=...`; the launch token is still the owner credential |
+| Reach the login page | From M1 on, unauthenticated requests are redirected to `loginPath`                              |
+| Sign in              | Local account, or directory account via search-then-bind                                        |
+| Use the GUI          | The admitted session races the launch-token cookie; either grants access until it expires       |
+
+Operational commands:
+
+```sh
+curl -s http://127.0.0.1:3080/auth-ldap/status          # deployment shape, no secrets
+dsh plugin --profile web remove dsh-auth-ldap           # uninstall
+```
+
+Until M1 lands, the plugin only serves the status route; the GUI still admits by launch token alone.
 
 ## Configuration
 
@@ -136,11 +166,17 @@ Report vulnerabilities per [SECURITY.md](SECURITY.md), not in a public issue.
 ## Development
 
 ```sh
-npm install
-npm run verify       # typecheck + lint + format check + tests + build
-npm test             # vitest
-npm run build        # tsc -> lib/
+corepack enable      # once; pnpm then follows packageManager in package.json
+pnpm install
+pnpm verify          # typecheck + lint + format check + tests + build
+pnpm test            # vitest
+pnpm run test:watch  # vitest in watch mode
+pnpm run build       # tsc -> lib/
+pnpm run format      # prettier --write .
 ```
+
+`pnpm verify` is what CI runs on Node 22 and 24; run it before every commit. `pnpm-lock.yaml` is
+committed, and CI installs with `--frozen-lockfile`.
 
 Layout:
 

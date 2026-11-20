@@ -45,18 +45,20 @@
 - `dsh >= 0.2.2-rc.1`。dsh 仍处于 pre-stable 阶段，依赖前请锁定已验证的版本范围。
 - 一个 LDAP v3 目录（OpenLDAP、LLDAP、389 DS、Active Directory），通过 LDAPS 或 STARTTLS 可达。
 
+开发插件还需要 **pnpm 12**，版本通过 `package.json` 的 `packageManager` 锁定。执行一次 `corepack enable`，
+`pnpm` 会自动解析到锁定版本；也可以直接 `npm i -g pnpm@12`。
+
 ## 安装
 
 ```sh
-# 从 npm（发布之后）
-dsh plugin --profile web add dsh-auth-ldap
-
-# 从 git 仓库
-dsh plugin --profile web add github:<owner>/dsh-auth-ldap
+pnpm dlx @deepseek-ai/dsh plugin --profile web add dsh-auth-ldap   # 从 npm（发布之后）
+pnpm dlx @deepseek-ai/dsh plugin --profile web add github:<owner>/dsh-auth-ldap   # 从 git 仓库
 ```
 
-包内声明了 `dsh.bundle.patch`，所以 `dsh plugin add` 会自动把插件行插入 profile。部署参数放在
-profile 的用户层：
+包内声明了 `dsh.bundle.patch`，所以 `dsh plugin add` 会自动把插件行插入 profile。如果 `dsh` 已在 `PATH` 中，
+去掉 `pnpm dlx @deepseek-ai/dsh` 前缀，直接用 `dsh plugin ...`。
+
+部署参数放在 profile 的用户层：
 
 ```yaml
 # $DSH_HOME/profiles/web/cordis.patch.yml
@@ -83,6 +85,32 @@ profile 的用户层：
 ```sh
 curl -s http://127.0.0.1:3080/auth-ldap/status
 ```
+
+## 使用
+
+启动已安装插件的 profile：
+
+```sh
+dsh web                      # 等价于 dsh --profile web
+```
+
+然后在浏览器里：
+
+| 步骤             | 会发生什么                                                                |
+| ---------------- | ------------------------------------------------------------------------- |
+| 打开打印出的 URL | dsh 打印 `http://127.0.0.1:3080/?token=...`；启动 token 仍然是 owner 凭据 |
+| 遇到登录页       | 从 M1 起，未认证请求会被重定向到 `loginPath`                              |
+| 登录             | 本地账户，或目录账户（search-then-bind）                                  |
+| 使用界面         | 已准入的会话与启动 token cookie 并存，任一有效即可访问，直到过期          |
+
+运维命令：
+
+```sh
+curl -s http://127.0.0.1:3080/auth-ldap/status          # 部署形态，不含秘密
+dsh plugin --profile web remove dsh-auth-ldap           # 卸载
+```
+
+M1 落地之前，插件只提供状态路由；界面仍然只靠启动 token 准入。
 
 ## 配置项
 
@@ -129,11 +157,17 @@ curl -s http://127.0.0.1:3080/auth-ldap/status
 ## 开发
 
 ```sh
-npm install
-npm run verify       # typecheck + lint + format check + tests + build
-npm test             # vitest
-npm run build        # tsc -> lib/
+corepack enable      # 执行一次；之后 pnpm 跟随 package.json 的 packageManager
+pnpm install
+pnpm verify          # typecheck + lint + format check + tests + build
+pnpm test            # vitest
+pnpm run test:watch  # vitest 监视模式
+pnpm run build       # tsc -> lib/
+pnpm run format      # prettier --write .
 ```
+
+`pnpm verify` 就是 CI 在 Node 22 / 24 上执行的内容，每次提交前跑一遍。`pnpm-lock.yaml` 会入库，
+CI 用 `--frozen-lockfile` 安装。
 
 目录：
 

@@ -32,14 +32,20 @@ module exists - several directories in the design note are not created yet.
 
 ## Commands
 
+This repository uses **pnpm only**; the version is pinned by `packageManager` in `package.json`, so run
+`corepack enable` once rather than installing a global pnpm.
+
 ```sh
-npm install          # once
-npm run verify       # typecheck + lint + format:check + test + build (run before every commit)
-npm test             # vitest run
-npm run test:watch
-npm run build        # tsc -> lib/
-npm run format       # prettier --write .
+pnpm install         # once
+pnpm verify          # typecheck + lint + format:check + test + build (run before every commit)
+pnpm test            # vitest run
+pnpm run test:watch
+pnpm run build       # tsc -> lib/
+pnpm run format      # prettier --write .
 ```
+
+`pnpm-lock.yaml` is committed and CI installs with `--frozen-lockfile`. Never introduce
+`package-lock.json` or `yarn.lock`.
 
 ## Layout rules
 
@@ -56,7 +62,7 @@ npm run format       # prettier --write .
 
 ```sh
 # in a checkout of the plugin
-npm run build
+pnpm run build
 
 # point a disposable profile at the checkout
 dsh plugin --profile web add "$PWD"

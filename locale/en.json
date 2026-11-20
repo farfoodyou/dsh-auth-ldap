@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "LDAP Authentication",
+    "description": "Sign in to the web UI with a local account or an LDAP/Active Directory account."
+  }
+}

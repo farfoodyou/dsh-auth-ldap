@@ -10,8 +10,16 @@ behaviour change increments the minor version and an internal change increments 
 
 ## [0.3.2] - 2026-11-21
 
+### Fixed
+
+- The session cookie carries `Secure` only when the request itself arrived over TLS. A `Secure` cookie
+  is silently dropped by the browser on a plain-HTTP origin, so signing in to `http://host:3080`
+  succeeded and then bounced straight back to the login page.
+
 ### Added
 
+- `allowedOrigins` accepts extra `host[:port]` values for the login POST, for deployments reachable
+  both by name and by address or behind a proxy that rewrites `Host`.
 - Audit entries for every early login rejection (method, origin, content type, oversized body, no
   backend configured), so a browser that never reaches password verification still leaves a trace.
 

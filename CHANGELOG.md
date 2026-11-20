@@ -31,5 +31,5 @@ behaviour change increments the minor version and an internal change increments 
 - Documentation: bilingual README, contributing guide, security policy, design note for the gate,
   two ADRs, and a milestone roadmap.
 
-[Unreleased]: https://github.com/OWNER/dsh-auth-ldap/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/OWNER/dsh-auth-ldap/releases/tag/v0.1.0
+[Unreleased]: https://github.com/farfoodyou/dsh-auth-ldap/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/farfoodyou/dsh-auth-ldap/releases/tag/v0.1.0

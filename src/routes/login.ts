@@ -165,6 +165,25 @@ function originAllowed(request: IncomingMessage, allowedOrigins: readonly string
 }
 
 /**
+ * Decide whether the browser leg is HTTPS.
+ *
+ * A `Secure` cookie is silently dropped by the browser on a plain-HTTP origin,
+ * which turns a successful login into a redirect loop when the instance is
+ * reached by address instead of through the TLS proxy. The attribute therefore
+ * follows the request rather than the configured default.
+ * @param request - incoming login request.
+ * @returns true when the request reached us over TLS.
+ */
+function requestIsSecure(request: IncomingMessage): boolean {
+  const forwarded = request.headers['x-forwarded-proto']
+  const raw = Array.isArray(forwarded) ? forwarded[0] : forwarded
+  if (raw !== undefined && raw !== '') {
+    return raw.split(',')[0]?.trim().toLowerCase() === 'https'
+  }
+  return (request.socket as { encrypted?: boolean }).encrypted === true
+}
+
+/**
  * Accept only same-origin absolute paths as a post-login destination.
  * @param value - submitted `next` value.
  * @returns the destination to use.
@@ -313,7 +332,9 @@ export function createLoginHandler(
       location: next,
       'cache-control': 'no-store',
       'referrer-policy': 'no-referrer',
-      'set-cookie': cookie.serialize(session),
+      'set-cookie': cookie.serialize(session, {
+        secure: config.session.secure && requestIsSecure(request),
+      }),
     })
     response.end()
   }

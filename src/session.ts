@@ -245,7 +245,8 @@ export class SessionCookie {
    * @param session - live session record.
    * @returns the header value.
    */
-  serialize(session: SessionRecord): string {
+  serialize(session: SessionRecord, options: { secure?: boolean } = {}): string {
+    const secure = options.secure ?? this.secure
     const attributes = [
       `${this.name}=${this.sign(session)}`,
       'Path=/',
@@ -253,7 +254,7 @@ export class SessionCookie {
       'SameSite=Lax',
       `Max-Age=${String(this.ttlSeconds)}`,
     ]
-    if (this.secure) attributes.push('Secure')
+    if (secure) attributes.push('Secure')
     return attributes.join('; ')
   }
 

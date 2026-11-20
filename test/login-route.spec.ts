@@ -217,6 +217,62 @@ describe('createLoginHandler', () => {
     expect(store.size).toBe(0)
   })
 
+  it('drops the Secure attribute when the login arrives over plain HTTP', async () => {
+    const captured: Captured = { headers: {} }
+    const handler = createLoginHandler({
+      config: parseConfig({ mode: 'gate', local: { enabled: true }, session: { secure: true } }),
+      store: new SessionStore(''),
+      cookie: new SessionCookie(randomBytes(32), 'dsh_auth_ldap', true, 3600),
+      verify: async () => ({
+        accountId: 'alice',
+        displayName: 'Alice',
+        roles: [],
+        backend: 'local' as const,
+      }),
+      warn: () => undefined,
+    })
+
+    await handler(
+      request({
+        method: 'POST',
+        headers: { ...formHeaders, 'x-forwarded-proto': 'http' },
+        body: form({ username: 'alice', password: 'valid-password' }),
+      }),
+      response(captured) as never,
+    )
+
+    expect(captured.status).toBe(303)
+    expect(String(captured.headers['set-cookie'])).not.toContain('Secure')
+  })
+
+  it('keeps the Secure attribute when the proxy reports HTTPS', async () => {
+    const captured: Captured = { headers: {} }
+    const secureHandler = createLoginHandler({
+      config: parseConfig({ mode: 'gate', local: { enabled: true }, session: { secure: true } }),
+      store: new SessionStore(''),
+      cookie: new SessionCookie(randomBytes(32), 'dsh_auth_ldap', true, 3600),
+      verify: async () => ({
+        accountId: 'alice',
+        displayName: 'Alice',
+        roles: [],
+        backend: 'local' as const,
+      }),
+      warn: () => undefined,
+    })
+
+    await secureHandler(
+      request({
+        method: 'POST',
+        headers: { ...formHeaders, 'x-forwarded-proto': 'https' },
+        body: form({ username: 'alice', password: 'valid-password' }),
+      }),
+      response(captured) as never,
+    )
+
+    expect(captured.status).toBe(303)
+    expect(String(captured.headers['set-cookie'])).toContain('Secure')
+  })
+
   it('rejects a non-form content type', async () => {
     const { handler } = await fixture()
     const captured: Captured = { headers: {} }

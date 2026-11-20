@@ -15,9 +15,9 @@ import z from '@deepseek-ai/schemastery'
  * - `observe`: admit the request and log the decision; used to stage a rollout
  *   without locking anyone out.
  *
- * The default is `observe` until the gate itself ships (M1): this milestone has
- * no admission logic, so defaulting to `gate` would describe a guarantee the
- * code does not provide.
+ * The default is `gate`: a security control should fail closed, and a mount
+ * without a usable backend is rejected with an actionable error instead of
+ * silently admitting everyone.
  */
 export type GateMode = 'gate' | 'observe'
 
@@ -59,6 +59,12 @@ export interface LdapBackendConfig {
   timeoutMs: number
 }
 
+/** Where the plugin keeps its signing key and session table. */
+export interface StorageConfig {
+  /** Directory for the signing key and session table; empty uses `$DSH_HOME/storages/auth-ldap`. */
+  dir: string
+}
+
 /** Browser session cookie policy. */
 export interface SessionConfig {
   /** Cookie name; must be unique per deployment behind a shared parent domain. */
@@ -87,6 +93,8 @@ export interface Config {
   local: LocalBackendConfig
   /** Directory backend. */
   ldap: LdapBackendConfig
+  /** Plugin storage location. */
+  storage: StorageConfig
   /** Session cookie policy. */
   session: SessionConfig
 }
@@ -102,7 +110,7 @@ export const DEFAULT_STATUS_PATH = '/auth-ldap/status'
 
 /** Validated configuration schema; loading fails on unknown or invalid values. */
 export const Config: z<Config> = z.object({
-  mode: z.union(['gate', 'observe'] as const).default('observe'),
+  mode: z.union(['gate', 'observe'] as const).default('gate'),
   publicHost: z.string().default(''),
   loginPath: z.string().default(DEFAULT_LOGIN_PATH),
   logoutPath: z.string().default(DEFAULT_LOGOUT_PATH),
@@ -126,6 +134,9 @@ export const Config: z<Config> = z.object({
     startTls: z.boolean().default(false),
     rejectUnauthorized: z.boolean().default(true),
     timeoutMs: z.natural().min(1000).max(120_000).default(10_000),
+  }),
+  storage: z.object({
+    dir: z.string().default(''),
   }),
   session: z.object({
     cookieName: z.string().default('dsh_auth_ldap'),
@@ -235,6 +246,16 @@ export function configWarnings(config: Config): string[] {
 
   if (config.mode === 'gate' && !config.ldap.enabled && config.local.enabled) {
     warnings.push('local accounts are the only backend; a lost password file locks everyone out')
+  }
+
+  if (config.ldap.enabled) {
+    warnings.push(
+      'the ldap backend is not implemented in this release; only local accounts can sign in',
+    )
+  }
+
+  if (config.mode === 'gate' && !config.local.enabled) {
+    warnings.push('gate mode without local accounts leaves only the launch-token URL for access')
   }
 
   if (config.ldap.enabled && !config.ldap.rejectUnauthorized) {

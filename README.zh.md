@@ -5,8 +5,8 @@
 为 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（`dsh`）的 Web profile 提供认证门禁：
 用一个登录页、一份配置，支持**本地账户**和 **LDAP / Active Directory** 两种凭据。
 
-> **状态：开发者预览。** M0（仓库脚手架、配置 schema、插件入口）已完成；门禁本身在 M1，目录后端在 M2，
-> 见 [docs/roadmap.md](docs/roadmap.md)。**目前不要用在生产实例前面。**
+> **状态：开发者预览。** M1 已交付：真正可用的门禁 + 本地账户 + 签名会话 + 登录限速 + 登出。目录后端在 M2（0.3.0），
+> `ldap.*` 配置会被校验但尚未生效。见 [docs/roadmap.md](docs/roadmap.md)。
 
 ## 为什么需要它
 
@@ -26,11 +26,12 @@
 
 **一期 —— 认证门禁**
 
-- 一个登录页，两种凭据后端：本地密码文件、LDAP/AD `search-then-bind`。
-- 群组映射：目录群组映射为 `admin` / `operator` / `viewer` 角色。
-- 签名的 `HttpOnly` 会话 cookie + 服务端会话表（可吊销、受 TTL 约束）。
-- 所有 HTTP 路由、`/api` 调用、WebSocket 升级都受门禁保护，**包括插件注册的路由**。
+- 一个登录页 + 本地账户（JSON 文件里的 `scrypt` 记录）。目录账户（`search-then-bind`）在 M2 跟进。
+- 签名的 `HttpOnly` + `SameSite=Lax` 会话 cookie，配服务端会话表：可吊销、受 TTL 约束、持久化，重启不掉线。
+- 页面文档与 `/api` 传输双层把关；`/api` 自带的 host 栅栏保持不变。
+- 登录限速：同一账户或来源地址 5 次失败后冷却 5 分钟；失败响应不泄露账户是否存在。
 - `observe` 模式：只记录决策不拒绝，便于灰度上线。
+- 进程启动 token 保留为**应急通道**，账户文件丢失也不会把 owner 锁在门外。
 - 未认证的 `/auth-ldap/status` 文档，供冒烟测试与监控使用。
 
 **二期 —— 按用户隔离（独立里程碑）**
@@ -114,29 +115,30 @@ M1 落地之前，插件只提供状态路由；界面仍然只靠启动 token �
 
 ## 配置项
 
-| 键                                                | 默认值                         | 含义                                               |
-| ------------------------------------------------- | ------------------------------ | -------------------------------------------------- |
-| `mode`                                            | `gate`                         | `gate` 拒绝未认证请求；`observe` 只记录            |
-| `publicHost`                                      | `""`                           | 登录页展示的 host，留空回退请求头 `Host`           |
-| `loginPath` / `logoutPath`                        | `/auth/login` / `/auth/logout` | 门禁路径                                           |
-| `statusPath`                                      | `/auth-ldap/status`            | 未认证的状态文档                                   |
-| `trustedProxyCidrs`                               | `[]`                           | 可信反向代理网段，只有这些来源的转发 IP 头才被读取 |
-| `local.enabled`                                   | `false`                        | 启用本地账户文件                                   |
-| `local.usersFile`                                 | `""`                           | 账户文件绝对路径                                   |
-| `ldap.enabled`                                    | `false`                        | 启用目录登录                                       |
-| `ldap.url`                                        | `""`                           | `ldaps://host[:port]` 或 `ldap://host[:port]`      |
-| `ldap.userSearchBase`                             | `""`                           | 搜索登录账户的 Base DN                             |
-| `ldap.userSearchFilter`                           | `(uid={{username}})`           | 用户过滤器，`{{username}}` 会按 RFC 4515 转义      |
-| `ldap.bindDn` / `ldap.bindPasswordEnv`            | `""`                           | 搜索用服务账户；留空表示匿名搜索                   |
-| `ldap.displayNameAttribute`                       | `displayName`                  | 显示名属性                                         |
-| `ldap.groupSearchBase` / `ldap.groupSearchFilter` | `""` / `(member={{dn}})`       | 群组映射查询                                       |
-| `ldap.adminGroups`                                | `[]`                           | 成员获得 `admin` 角色的群组                        |
-| `ldap.startTls`                                   | `false`                        | 对 `ldap://` 连接启用 STARTTLS                     |
-| `ldap.rejectUnauthorized`                         | `true`                         | 校验目录证书                                       |
-| `ldap.timeoutMs`                                  | `10000`                        | 连接与搜索超时                                     |
-| `session.cookieName`                              | `dsh_auth_ldap`                | 会话 cookie 名                                     |
-| `session.ttlSeconds`                              | `43200`                        | 会话绝对有效期                                     |
-| `session.secure`                                  | `true`                         | 是否输出 `Secure` 属性                             |
+| 键                                                | 默认值                         | 含义                                                        |
+| ------------------------------------------------- | ------------------------------ | ----------------------------------------------------------- |
+| `mode`                                            | `gate`                         | `gate` 拒绝未认证请求；`observe` 只记录                     |
+| `publicHost`                                      | `""`                           | 登录页展示的 host，留空回退请求头 `Host`                    |
+| `loginPath` / `logoutPath`                        | `/auth/login` / `/auth/logout` | 门禁路径                                                    |
+| `statusPath`                                      | `/auth-ldap/status`            | 未认证的状态文档                                            |
+| `trustedProxyCidrs`                               | `[]`                           | 可信反向代理网段，只有这些来源的转发 IP 头才被读取          |
+| `local.enabled`                                   | `false`                        | 启用本地账户文件                                            |
+| `local.usersFile`                                 | `""`                           | 账户文件绝对路径                                            |
+| `ldap.enabled`                                    | `false`                        | 启用目录登录                                                |
+| `ldap.url`                                        | `""`                           | `ldaps://host[:port]` 或 `ldap://host[:port]`               |
+| `ldap.userSearchBase`                             | `""`                           | 搜索登录账户的 Base DN                                      |
+| `ldap.userSearchFilter`                           | `(uid={{username}})`           | 用户过滤器，`{{username}}` 会按 RFC 4515 转义               |
+| `ldap.bindDn` / `ldap.bindPasswordEnv`            | `""`                           | 搜索用服务账户；留空表示匿名搜索                            |
+| `ldap.displayNameAttribute`                       | `displayName`                  | 显示名属性                                                  |
+| `ldap.groupSearchBase` / `ldap.groupSearchFilter` | `""` / `(member={{dn}})`       | 群组映射查询                                                |
+| `ldap.adminGroups`                                | `[]`                           | 成员获得 `admin` 角色的群组                                 |
+| `ldap.startTls`                                   | `false`                        | 对 `ldap://` 连接启用 STARTTLS                              |
+| `ldap.rejectUnauthorized`                         | `true`                         | 校验目录证书                                                |
+| `ldap.timeoutMs`                                  | `10000`                        | 连接与搜索超时                                              |
+| `session.cookieName`                              | `dsh_auth_ldap`                | 会话 cookie 名                                              |
+| `session.ttlSeconds`                              | `43200`                        | 会话绝对有效期                                              |
+| `session.secure`                                  | `true`                         | 是否输出 `Secure` 属性                                      |
+| `storage.dir`                                     | `""`                           | 签名密钥与会话表目录；留空用 `$DSH_HOME/storages/auth-ldap` |
 
 配置校验分两层：schema 在加载时拒绝形状与范围错误；`validateConfig` 拒绝组合错误，例如
 「启用 LDAP 但没有搜索 Base DN」「明文 LDAP 且未开 STARTTLS」。这类错误会中止挂载。而部署异味
@@ -173,12 +175,15 @@ CI 用 `--frozen-lockfile` 安装。
 目录：
 
 ```
-src/config.ts        schema、默认值、跨字段校验
+src/config.ts        schema、默认值、跨字段校验、部署警告
+src/gate.ts          准入：包装 connection.admit / connection.authorizeIndex
+src/session.ts       签名 cookie、会话表、签名密钥加载
+src/users.ts         账户文件模型与本地凭据校验
+src/password.ts      scrypt 哈希与常数时间校验
+src/login-page.ts    登录页文档
+src/routes/          登录、登出、状态 handler
+src/cli.ts           `dsh-auth-ldap` 账户维护
 src/principal.ts     本插件的 PrincipalMap 条目
-src/routes/          HTTP handler
-src/gate/            请求准入（M1）
-src/session/         签名 cookie + 会话表（M1）
-src/backends/        本地账户文件、LDAP bind（M1、M2）
 test/                单元测试，与 src/ 对应
 docs/design/         设计说明
 docs/adr/            架构决策记录

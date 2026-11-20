@@ -1,6 +1,6 @@
 # Design 0001 - Authentication gate for the `dsh` web profile
 
-Status: accepted, phase 1 (M0 complete, M1 in progress)
+Status: accepted, phase 1 (M1 shipped: gate + local accounts; M2 directory backend pending)
 Owners: repository maintainers
 
 ## Problem
@@ -198,6 +198,18 @@ run) is out of scope and would use `tools/pre-execute` in a later milestone.
 | Integration  | in-process `webServer` stub: public paths admitted, guarded routes denied without a session, denied upgrade, observe mode logging      |
 | Directory    | docker `osixia/openldap` fixture in a nightly job: search-then-bind, ambiguous search, group mapping, STARTTLS                         |
 | Manual smoke | install into a local `web` profile, `curl /auth-ldap/status`, log in, verify a guarded route and a WebSocket session                   |
+
+## Known limitations of phase 1
+
+- **Shared operator peer.** `dsh` rejects non-owner principals on `/api` fetch routes, so every admitted
+  session acts as the operator. Anyone who can log in can see every session, workspace, and model
+  credential. This is the single-tenant limitation, not a bug in the gate.
+- **No directory backend.** `ldap.*` is validated and warned about until M2.
+- **No second factor.** Throttling and uniform failures are the only brute-force controls.
+- **Single process.** The session table is a JSON document, so two `dsh` processes must not share a
+  `storage.dir`.
+- **Named routes registered by other plugins stay reachable** unless they call `admit` themselves; the
+  gate covers the document and `/api`, which is where `dsh` performs its own admission.
 
 ## Phase 2 - per-user isolation
 

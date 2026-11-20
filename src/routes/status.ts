@@ -11,7 +11,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { Config } from '../config.js'
 
 /** Current implementation milestone, surfaced so deployments can prove which build runs. */
-export const PHASE = 'm0-scaffolding'
+export const PHASE = 'm1-gate-local'
 
 /** Machine-readable status document. */
 export interface StatusPayload {

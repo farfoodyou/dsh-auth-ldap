@@ -30,4 +30,13 @@ export default tseslint.config(
       eqeqeq: ['error', 'smart'],
     },
   },
+  {
+    // Test doubles deliberately keep unbound methods (to assert restoration) and
+    // non-awaiting async iterators (to model a request stream).
+    files: ['test/**/*.ts'],
+    rules: {
+      '@typescript-eslint/unbound-method': 'off',
+      '@typescript-eslint/require-await': 'off',
+    },
+  },
 )

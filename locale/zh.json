@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "LDAP 认证",
+    "description": "使用本地账户或 LDAP / Active Directory 账户登录 Web 界面。"
+  }
+}

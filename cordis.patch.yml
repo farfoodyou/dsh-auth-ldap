@@ -1,0 +1,23 @@
+# Bundle patch for dsh-auth-ldap.
+#
+# `dsh plugin --profile web add dsh-auth-ldap` reconciles `dsh.profile.bundles`
+# and merges the row below into the profile. Deployment values (directory
+# endpoint, account file, cookie policy) belong in the user layer, applied after
+# every bundle layer:
+#
+#   $DSH_HOME/profiles/<profile>/cordis.patch.yml
+#
+# Example user-layer override:
+#
+#   - id: dsh-auth-ldap
+#     config:
+#       mode: gate
+#       ldap:
+#         enabled: true
+#         url: ldaps://dc1.corp.example.com:636
+#         userSearchBase: ou=people,dc=corp,dc=example,dc=com
+#         userSearchFilter: (uid={{username}})
+#         bindPasswordEnv: DSH_LDAP_BIND_PASSWORD
+- insert:
+    - id: dsh-auth-ldap
+      name: 'dsh-auth-ldap'

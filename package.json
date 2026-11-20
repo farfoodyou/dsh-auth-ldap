@@ -44,6 +44,15 @@
     "LICENSE"
   ],
   "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/farfoodyou/dsh-auth-ldap.git"
+  },
+  "homepage": "https://github.com/farfoodyou/dsh-auth-ldap#readme",
+  "bugs": {
+    "url": "https://github.com/farfoodyou/dsh-auth-ldap/issues"
+  },
+  "author": "dsh-auth-ldap contributors",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",

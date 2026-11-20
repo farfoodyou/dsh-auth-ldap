@@ -239,18 +239,24 @@ export function createLoginHandler(
     }
 
     if (!config.local.enabled && !config.ldap.enabled) {
+      audit?.append({ event: 'denied', fields: { reason: 'no-backend' } })
       render(response, authority, '/', 'No sign-in method is configured on this instance.', 403)
       return
     }
 
     const contentType = request.headers['content-type'] ?? ''
     if (!String(contentType).startsWith('application/x-www-form-urlencoded')) {
+      audit?.append({
+        event: 'denied',
+        fields: { reason: 'content-type', got: String(contentType) },
+      })
       send(response, 415, {}, 'expected a form post\n')
       return
     }
 
     const body = await readBody(request)
     if (body === undefined) {
+      audit?.append({ event: 'denied', fields: { reason: 'body-too-large' } })
       send(response, 413, {}, 'form body too large\n')
       return
     }

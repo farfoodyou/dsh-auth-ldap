@@ -1,6 +1,6 @@
 {
   "name": "dsh-auth-ldap",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Authentication gate for DeepSeek Harness web profiles: local accounts and LDAP/Active Directory bind behind one login page.",
   "keywords": [
     "dsh",

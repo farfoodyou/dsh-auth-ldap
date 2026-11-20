@@ -8,6 +8,13 @@ behaviour change increments the minor version and an internal change increments 
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-11-21
+
+### Added
+
+- Audit entries for every early login rejection (method, origin, content type, oversized body, no
+  backend configured), so a browser that never reaches password verification still leaves a trace.
+
 ## [0.3.1] - 2026-11-20
 
 ### Fixed
@@ -116,7 +123,8 @@ behaviour change increments the minor version and an internal change increments 
 - Documentation: bilingual README, contributing guide, security policy, design note for the gate,
   two ADRs, and a milestone roadmap.
 
-[Unreleased]: https://github.com/farfoodyou/dsh-auth-ldap/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/farfoodyou/dsh-auth-ldap/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/farfoodyou/dsh-auth-ldap/releases/tag/v0.3.2
 [0.3.1]: https://github.com/farfoodyou/dsh-auth-ldap/releases/tag/v0.3.1
 [0.3.0]: https://github.com/farfoodyou/dsh-auth-ldap/releases/tag/v0.3.0
 [0.2.0]: https://github.com/farfoodyou/dsh-auth-ldap/releases/tag/v0.2.0

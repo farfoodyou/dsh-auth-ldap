@@ -35,8 +35,12 @@ them can verify against a directory. `dsh-auth-ldap` fills that gap without fork
 - Signed, `HttpOnly`, `SameSite=Lax` session cookies backed by a server-side table: revocable,
   TTL-bounded, and persisted so a restart does not sign everyone out.
 - Page documents and the `/api` transport are both gated; `/api` keeps its own host fence.
-- Throttled login: five failures per account or address impose a five-minute cooldown, and the failure
-  response never reveals whether an account exists.
+- Throttled login: five failures from one client address impose a five-minute cooldown, and twenty
+  failures against one account slow further guessing down. A correct password is never refused because
+  an account budget is spent, so nobody can lock the operator out; the failure response never reveals
+  whether an account exists.
+- Every decision lands in `<storage.dir>/audit.log` (account, address, backend, failure class) because a
+  harness logger without an exporter silently drops plugin warnings.
 - `observe` mode: log the decision without denying, so a rollout can be staged.
 - The process launch token keeps working as break-glass access, so a lost account file cannot lock the
   operator out of their own instance.
@@ -133,6 +137,7 @@ Until M1 lands, the plugin only serves the status route; the GUI still admits by
 | `loginPath` / `logoutPath`                        | `/auth/login` / `/auth/logout` | Gate endpoints                                                                             |
 | `statusPath`                                      | `/auth-ldap/status`            | Unauthenticated status document                                                            |
 | `trustedProxyCidrs`                               | `[]`                           | Proxies whose forwarded client-IP header is trusted                                        |
+| `clientIpHeader`                                  | `x-forwarded-for`              | Header read for the client address, only when the peer is a trusted proxy                  |
 | `local.enabled`                                   | `false`                        | Enable the local account file                                                              |
 | `local.usersFile`                                 | `""`                           | Absolute path to the account file                                                          |
 | `ldap.enabled`                                    | `false`                        | Enable directory login                                                                     |
@@ -145,6 +150,7 @@ Until M1 lands, the plugin only serves the status route; the GUI still admits by
 | `ldap.adminGroups`                                | `[]`                           | Groups whose members get the `admin` role                                                  |
 | `ldap.startTls`                                   | `false`                        | Upgrade `ldap://` with STARTTLS                                                            |
 | `ldap.rejectUnauthorized`                         | `true`                         | Verify the directory certificate                                                           |
+| `ldap.caFile`                                     | `""`                           | PEM CA bundle for the directory certificate; empty uses the system roots                   |
 | `ldap.timeoutMs`                                  | `10000`                        | Connect and search timeout                                                                 |
 | `session.cookieName`                              | `dsh_auth_ldap`                | Session cookie name                                                                        |
 | `session.ttlSeconds`                              | `43200`                        | Absolute session lifetime                                                                  |

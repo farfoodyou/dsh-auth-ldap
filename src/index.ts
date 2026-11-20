@@ -19,6 +19,8 @@ import { type AuthenticatedUser, createCredentialChain } from './authenticate.js
 import type { Config } from './config.js'
 import { configWarnings, validateConfig } from './config.js'
 import { connectDirectory } from './ldap/client.js'
+import { AuditLog } from './audit.js'
+import { createLog } from './log.js'
 import { installGate } from './gate.js'
 import { createLoginHandler, createLogoutHandler } from './routes/login.js'
 import { createStatusHandler } from './routes/status.js'
@@ -57,6 +59,11 @@ export type {
 export { createLoginHandler, createLogoutHandler, safeNext } from './routes/login.js'
 export { createStatusHandler, statusPayload, PHASE } from './routes/status.js'
 export type { StatusPayload } from './routes/status.js'
+export { AuditLog } from './audit.js'
+export type { AuditEntry, AuditEvent } from './audit.js'
+export { LOG_PREFIX, createLog, writeDiagnostic } from './log.js'
+export { isTrustedProxy, parseAddress, parseCidr, resolveClientAddress } from './net/address.js'
+export type { Cidr, ClientAddressInput } from './net/address.js'
 export { SessionCookie, SessionStore, loadOrCreateSecret } from './session.js'
 export type { SessionInput, SessionRecord, CookiePayload } from './session.js'
 export { authenticateLocal, findAccount, loadUsers, saveUsers } from './users.js'
@@ -120,10 +127,13 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     throw new Error(`dsh-auth-ldap: invalid configuration: ${problems.join('; ')}`)
   }
 
-  const warn = (message: string): void => ctx.logger.warn('dsh-auth-ldap: %s', message)
-  for (const warning of configWarnings(config)) warn(warning)
-
   const storageDir = resolveStorageDir(config.storage.dir)
+  const audit = new AuditLog(join(storageDir, 'audit.log'))
+  const warn = createLog((message: string) => ctx.logger.warn('dsh-auth-ldap: %s', message))
+  for (const warning of configWarnings(config)) {
+    warn(warning)
+    audit.append({ event: 'config-warning', fields: { message: warning } })
+  }
   const secret = await loadOrCreateSecret(join(storageDir, 'session.key'))
   const store = new SessionStore(join(storageDir, 'sessions.json'))
   await store.load()
@@ -133,6 +143,15 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
     config.session.secure,
     config.session.ttlSeconds,
   )
+
+  audit.append({
+    event: 'mount',
+    fields: {
+      mode: config.mode,
+      local: String(config.local.enabled),
+      ldap: String(config.ldap.enabled),
+    },
+  })
 
   const usersFile = resolveUsersFile(config.local.usersFile)
   const readUsers =
@@ -163,7 +182,7 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
         })
       : (): Promise<AuthenticatedUser | undefined> => Promise.resolve(undefined)
 
-  const login = createLoginHandler({ config, store, cookie, verify, warn })
+  const login = createLoginHandler({ config, store, cookie, verify, warn, audit })
   const logout = createLogoutHandler({ store, cookie })
 
   ctx.inject(['webServer'], (webCtx) => {

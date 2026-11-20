@@ -208,6 +208,8 @@ run) is out of scope and would use `tools/pre-execute` in a later milestone.
 - **No second factor.** Throttling and uniform failures are the only brute-force controls.
 - **Single process.** The session table is a JSON document, so two `dsh` processes must not share a
   `storage.dir`.
+- **Harness logging is not reliable here.** A logger without a registered exporter drops plugin
+  warnings, so login decisions are written to `<storage.dir>/audit.log` as well as to stderr.
 - **Named routes registered by other plugins stay reachable** unless they call `admit` themselves; the
   gate covers the document and `/api`, which is where `dsh` performs its own admission.
 

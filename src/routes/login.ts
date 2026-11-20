@@ -9,17 +9,28 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 
 import type { AuthenticatedUser } from '../authenticate.js'
+import type { AuditLog } from '../audit.js'
 import type { Config } from '../config.js'
 import { escapeHtml, renderLoginPage } from '../login-page.js'
+import { resolveClientAddress } from '../net/address.js'
 import type { SessionCookie, SessionStore } from '../session.js'
 
 /** Largest accepted form body. */
 const MAX_BODY_BYTES = 4096
 
-/** Failure budget per key before a cooldown. */
-const MAX_FAILURES = 5
+/** Failures allowed per client address inside one cooldown. */
+const MAX_ADDRESS_FAILURES = 5
 
-/** Cooldown applied after the budget is spent. */
+/**
+ * Failures allowed per account inside one cooldown.
+ *
+ * Higher than the address budget on purpose: an account bucket that blocks a
+ * correct password would let anyone lock the operator out, so this budget only
+ * slows distributed guessing and never denies a valid credential.
+ */
+const MAX_ACCOUNT_FAILURES = 20
+
+/** Cooldown applied after a budget is spent. */
 const COOLDOWN_MS = 5 * 60 * 1000
 
 /** Login route collaborators. */
@@ -34,6 +45,8 @@ export interface LoginDeps {
   readonly verify: (username: string, password: string) => Promise<AuthenticatedUser | undefined>
   /** Log sink; never receives credentials. */
   readonly warn: (message: string) => void
+  /** Append-only audit sink for login decisions. */
+  readonly audit?: AuditLog
 }
 
 /** In-memory attempt budget keyed by account and client address. */
@@ -42,16 +55,17 @@ class AttemptBudget {
 
   /**
    * @param key - account or address bucket.
+   * @param limit - failures allowed in this bucket.
    * @returns whether the bucket is cooling down.
    */
-  blocked(key: string): boolean {
+  blocked(key: string, limit: number): boolean {
     const entry = this.failures.get(key)
     if (entry === undefined) return false
     if (entry.resetAt <= Date.now()) {
       this.failures.delete(key)
       return false
     }
-    return entry.count >= MAX_FAILURES
+    return entry.count >= limit
   }
 
   /**
@@ -97,6 +111,19 @@ function send(
     ...headers,
   })
   response.end(body)
+}
+
+/**
+ * Read one request header as a string.
+ * @param request - incoming request.
+ * @param name - lower-case header name.
+ * @returns the header value, or `undefined`.
+ */
+function headerValue(request: IncomingMessage, name: string): string | undefined {
+  const value = request.headers[name]
+  if (typeof value === 'string') return value
+  if (Array.isArray(value)) return value.join(', ')
+  return undefined
 }
 
 /**
@@ -155,7 +182,7 @@ export function createLoginHandler(
   deps: LoginDeps,
 ): (request: IncomingMessage, response: ServerResponse) => Promise<void> {
   const budget = new AttemptBudget()
-  const { config, store, cookie, verify, warn } = deps
+  const { config, store, cookie, verify, warn, audit } = deps
 
   const render = (
     response: ServerResponse,
@@ -221,31 +248,49 @@ export function createLoginHandler(
     const username = (form.get('username') ?? '').trim()
     const password = form.get('password') ?? ''
     const next = safeNext(form.get('next'))
-    const address = request.socket.remoteAddress ?? 'unknown'
+    const headerName = config.clientIpHeader.trim().toLowerCase()
+    const forwardedFor = headerName === '' ? undefined : headerValue(request, headerName)
+    const address = resolveClientAddress({
+      remoteAddress: request.socket.remoteAddress,
+      forwardedFor,
+      trustedProxyCidrs: config.trustedProxyCidrs,
+    })
+    const addressKey = address ?? 'unattributed'
     const accountKey = username.toLowerCase()
 
-    if (budget.blocked(accountKey) || budget.blocked(address)) {
-      warn(`login throttled: ${accountKey} from ${address}`)
+    if (address !== undefined && budget.blocked(addressKey, MAX_ADDRESS_FAILURES)) {
+      warn(`login throttled: ${accountKey} from ${addressKey}`)
+      audit?.append({ event: 'login-throttled', fields: { account: accountKey, from: addressKey } })
       render(response, authority, next, 'Too many attempts. Try again later.', 429)
       return
     }
 
     const account = await verify(username, password)
     if (account === undefined) {
+      const accountWasBlocked = budget.blocked(accountKey, MAX_ACCOUNT_FAILURES)
       budget.fail(accountKey)
-      budget.fail(address)
-      warn(`login failed: ${accountKey} from ${address}`)
+      if (address !== undefined) budget.fail(addressKey)
+      warn(`login failed: ${accountKey} from ${addressKey}`)
+      audit?.append({ event: 'login-fail', fields: { account: accountKey, from: addressKey } })
+      if (accountWasBlocked) {
+        render(response, authority, next, 'Too many attempts. Try again later.', 429)
+        return
+      }
       render(response, authority, next, 'Sign-in failed.', 401)
       return
     }
 
     budget.reset(accountKey)
-    budget.reset(address)
+    if (address !== undefined) budget.reset(addressKey)
     const session = await store.create(
       { accountId: account.accountId, displayName: account.displayName, roles: account.roles },
       config.session.ttlSeconds,
     )
-    warn(`login succeeded: ${account.accountId} (${account.backend}) from ${address}`)
+    warn(`login succeeded: ${account.accountId} (${account.backend}) from ${addressKey}`)
+    audit?.append({
+      event: 'login-ok',
+      fields: { account: account.accountId, backend: account.backend, from: addressKey },
+    })
 
     response.writeHead(303, {
       location: next,

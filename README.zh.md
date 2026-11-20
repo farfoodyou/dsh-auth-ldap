@@ -30,7 +30,10 @@
   `search-then-bind`，支持群组到角色映射）。
 - 签名的 `HttpOnly` + `SameSite=Lax` 会话 cookie，配服务端会话表：可吊销、受 TTL 约束、持久化，重启不掉线。
 - 页面文档与 `/api` 传输双层把关；`/api` 自带的 host 栅栏保持不变。
-- 登录限速：同一账户或来源地址 5 次失败后冷却 5 分钟；失败响应不泄露账户是否存在。
+- 登录限速：同一客户端地址 5 次失败后冷却 5 分钟；同一账户 20 次失败后进一步放慢。**正确的密码不会因为
+  账户计数用尽而被拒绝**，所以没人能把运维锁在门外；失败响应不泄露账户是否存在。
+- 每次决策都会写进 `<storage.dir>/audit.log`（账户、地址、后端、失败类别）—— 因为 harness 的 logger 在没有
+  注册 exporter 时会静默丢弃插件告警。
 - `observe` 模式：只记录决策不拒绝，便于灰度上线。
 - 进程启动 token 保留为**应急通道**，账户文件丢失也不会把 owner 锁在门外。
 - 未认证的 `/auth-ldap/status` 文档，供冒烟测试与监控使用。
@@ -123,6 +126,7 @@ M1 落地之前，插件只提供状态路由；界面仍然只靠启动 token �
 | `loginPath` / `logoutPath`                        | `/auth/login` / `/auth/logout` | 门禁路径                                                    |
 | `statusPath`                                      | `/auth-ldap/status`            | 未认证的状态文档                                            |
 | `trustedProxyCidrs`                               | `[]`                           | 可信反向代理网段，只有这些来源的转发 IP 头才被读取          |
+| `clientIpHeader`                                  | `x-forwarded-for`              | 仅当对端是可信代理时，从这个头读取客户端地址                |
 | `local.enabled`                                   | `false`                        | 启用本地账户文件                                            |
 | `local.usersFile`                                 | `""`                           | 账户文件绝对路径                                            |
 | `ldap.enabled`                                    | `false`                        | 启用目录登录                                                |
@@ -135,6 +139,7 @@ M1 落地之前，插件只提供状态路由；界面仍然只靠启动 token �
 | `ldap.adminGroups`                                | `[]`                           | 成员获得 `admin` 角色的群组                                 |
 | `ldap.startTls`                                   | `false`                        | 对 `ldap://` 连接启用 STARTTLS                              |
 | `ldap.rejectUnauthorized`                         | `true`                         | 校验目录证书                                                |
+| `ldap.caFile`                                     | `""`                           | 目录证书用的 PEM CA 包；留空用系统根证书                    |
 | `ldap.timeoutMs`                                  | `10000`                        | 连接与搜索超时                                              |
 | `session.cookieName`                              | `dsh_auth_ldap`                | 会话 cookie 名                                              |
 | `session.ttlSeconds`                              | `43200`                        | 会话绝对有效期                                              |

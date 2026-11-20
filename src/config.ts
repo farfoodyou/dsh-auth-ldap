@@ -93,6 +93,8 @@ export interface Config {
   statusPath: string
   /** Reverse proxies whose forwarded client-IP headers are trusted. */
   trustedProxyCidrs: string[]
+  /** Header carrying the client address when the peer is a trusted proxy. */
+  clientIpHeader: string
   /** Local account backend. */
   local: LocalBackendConfig
   /** Directory backend. */
@@ -120,6 +122,7 @@ export const Config: z<Config> = z.object({
   logoutPath: z.string().default(DEFAULT_LOGOUT_PATH),
   statusPath: z.string().default(DEFAULT_STATUS_PATH),
   trustedProxyCidrs: z.array(z.string()).default([]),
+  clientIpHeader: z.string().default('x-forwarded-for'),
   local: z.object({
     enabled: z.boolean().default(false),
     usersFile: z.string().default(''),
@@ -252,12 +255,6 @@ export function configWarnings(config: Config): string[] {
 
   if (config.mode === 'gate' && !config.ldap.enabled && config.local.enabled) {
     warnings.push('local accounts are the only backend; a lost password file locks everyone out')
-  }
-
-  if (config.ldap.enabled) {
-    warnings.push(
-      'the ldap backend is not implemented in this release; only local accounts can sign in',
-    )
   }
 
   if (config.mode === 'gate' && !config.local.enabled) {

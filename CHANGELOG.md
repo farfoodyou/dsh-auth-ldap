@@ -8,6 +8,27 @@ behaviour change increments the minor version and an internal change increments 
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-11-20
+
+### Fixed
+
+- Rate limiting behind a reverse proxy no longer buckets every client together. `trustedProxyCidrs`
+  plus the new `clientIpHeader` attribute requests to the rightmost non-proxy hop; a trusted proxy with
+  no usable header skips the address budget instead of throttling everyone. Before this fix, one
+  attacker's five failures locked out every user for five minutes.
+- A correct password is never refused because the account budget is spent. The account budget is now
+  20 failures per cooldown and only turns a wrong password into `429`; denying valid credentials would
+  let anyone deny the operator service.
+
+### Added
+
+- `ldap.caFile` loads a PEM CA bundle, so a private directory CA no longer depends on
+  `NODE_EXTRA_CA_CERTS` in the service unit.
+- `<storage.dir>/audit.log`: an append-only record of mount, configuration warnings, and every login
+  decision (account, client address, backend, failure class, no credential material). The harness logger
+  drops plugin warnings when no exporter is registered, which made the previous release impossible to
+  debug on a live instance.
+
 ## [0.3.0] - 2026-11-20
 
 ### Added
@@ -95,7 +116,8 @@ behaviour change increments the minor version and an internal change increments 
 - Documentation: bilingual README, contributing guide, security policy, design note for the gate,
   two ADRs, and a milestone roadmap.
 
-[Unreleased]: https://github.com/farfoodyou/dsh-auth-ldap/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/farfoodyou/dsh-auth-ldap/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/farfoodyou/dsh-auth-ldap/releases/tag/v0.3.1
 [0.3.0]: https://github.com/farfoodyou/dsh-auth-ldap/releases/tag/v0.3.0
 [0.2.0]: https://github.com/farfoodyou/dsh-auth-ldap/releases/tag/v0.2.0
 [0.1.1]: https://github.com/farfoodyou/dsh-auth-ldap/releases/tag/v0.1.1

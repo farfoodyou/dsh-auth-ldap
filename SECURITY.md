@@ -33,9 +33,10 @@ These are requirements, not recommendations:
    listener or at a proxy that forwards `Host` unchanged.
 2. Never expose the `dsh` port directly to the internet. Bind the listener to loopback or a private
    interface and let the gate decide admission.
-3. Populate `trustedProxyCidrs` with the exact proxies in front of the instance. Leaving it empty means
-   forwarded client-IP headers are ignored, which is correct for direct connections and wrong behind a
-   proxy that rewrites `Host`.
+3. Populate `trustedProxyCidrs` with the exact proxies in front of the instance, and set
+   `clientIpHeader` to the header that proxy writes. Leaving the list empty means forwarded headers are
+   ignored: every request behind a proxy is then bucketed by the proxy address, which turns one
+   attacker's five failures into a shared cooldown.
 4. Use `ldaps://` or `startTls: true`. `rejectUnauthorized: false` is for lab use only and is logged as
    a warning on every mount.
 5. Give the service account read-only search rights. It never needs write access.

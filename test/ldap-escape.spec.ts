@@ -46,10 +46,15 @@ describe('applyFilterTemplate', () => {
     )
   })
 
-  it('substitutes and escapes the entry DN', () => {
+  it('escapes the entry DN for filter syntax (RFC 4515)', () => {
+    // The DN is filter *data*: `=` and `,` are legal there but `\` and `*`
+    // are not, and `\=` makes the server reject the whole filter.
     expect(
       applyFilterTemplate('(member={{dn}})', { dn: 'cn=Alice,ou=people,dc=example,dc=com' }),
-    ).toBe('(member=cn\\=Alice\\,ou\\=people\\,dc\\=example\\,dc\\=com)')
+    ).toBe('(member=cn=Alice,ou=people,dc=example,dc=com)')
+    expect(applyFilterTemplate('(member={{dn}})', { dn: 'cn=a*b\\c' })).toBe(
+      '(member=cn=a\\2ab\\5cc)',
+    )
   })
 
   it('rejects an unknown placeholder so a configuration typo fails loudly', () => {

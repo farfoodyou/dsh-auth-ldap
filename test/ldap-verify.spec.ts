@@ -79,9 +79,10 @@ describe('escapeFilterValue', () => {
 
   it('replaces the placeholders used by the filter templates', () => {
     expect(applyFilterTemplate('(uid={{username}})', { username: 'a*b' })).toBe('(uid=a\\2ab)')
-    // DN placeholders are escaped for DN syntax, not filter syntax.
-    expect(applyFilterTemplate('(member={{dn}})', { dn: 'cn=x,dc=y' })).toBe(
-      '(member=cn\\=x\\,dc\\=y)',
+    // A DN inserted into a filter is filter data, so RFC 4515 escaping applies.
+    expect(applyFilterTemplate('(member={{dn}})', { dn: 'cn=x,dc=y' })).toBe('(member=cn=x,dc=y)')
+    expect(applyFilterTemplate('(member={{dn}})', { dn: 'cn=a*b,dc=y' })).toBe(
+      '(member=cn=a\\2ab,dc=y)',
     )
   })
 })

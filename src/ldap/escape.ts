@@ -76,7 +76,10 @@ export function applyFilterTemplate(
     }
     const value = values[name]
     if (value === undefined) return _match
-    return name === 'username' ? escapeFilterValue(value) : escapeDnValue(value)
+    // Both placeholders land inside a *filter*, so both take RFC 4515 escaping:
+    // a DN inserted into a filter is data, not DN syntax, and `\=` would be
+    // rejected by the server ("Invalid escaped hex character").
+    return escapeFilterValue(value)
   })
   return substituted
 }

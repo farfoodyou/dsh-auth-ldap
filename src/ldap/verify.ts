@@ -143,6 +143,7 @@ export async function verifyDirectory(
       url: config.url,
       startTls: config.startTls,
       rejectUnauthorized: config.rejectUnauthorized,
+      caFile: config.caFile,
       timeoutMs: config.timeoutMs,
     })
   } catch (error) {

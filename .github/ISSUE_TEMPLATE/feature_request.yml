@@ -1,0 +1,34 @@
+name: Feature request
+description: Propose behaviour this plugin does not have yet.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What cannot be done today, and who is affected.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behaviour
+      description: Configuration keys, endpoints, or roles you expect.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Including "use a reverse proxy" or another plugin where that fits better.
+  - type: dropdown
+    id: milestone
+    attributes:
+      label: Where it fits
+      options:
+        - phase 1 authentication gate
+        - phase 1 operations (rate limiting, audit, admin surface)
+        - phase 2 per-user isolation
+        - not sure
+    validations:
+      required: true

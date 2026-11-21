@@ -150,6 +150,11 @@ M1 落地之前，插件只提供状态路由；界面仍然只靠启动 token �
 「启用 LDAP 但没有搜索 Base DN」「明文 LDAP 且未开 STARTTLS」。这类错误会中止挂载。而部署异味
 （没有配置任何后端、只有本地账户、关闭了证书校验）只记警告，插件照常挂载，便于在运行中的实例上排查。
 
+## 在真机上运行
+
+[docs/deployment.zh.md](docs/deployment.zh.md) 写了 `systemd --user` 单元、npm 12 装 `dsh` 时的
+`--allow-scripts` 陷阱、需要备份哪些文件，以及升级后的回归检查清单。
+
 ## 接入目录
 
 先读 [docs/ldap-integration.zh.md](docs/ldap-integration.zh.md)：里面列了目录侧必须提供的值、插件在协议上执行的

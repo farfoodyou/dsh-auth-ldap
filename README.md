@@ -163,6 +163,11 @@ without STARTTLS". Those failures stop the mount. Deployment smells - no backend
 accounts as the only backend, disabled certificate verification - are logged as warnings so the
 plugin still mounts and can be diagnosed from a running instance.
 
+## Running it on a host
+
+[docs/deployment.md](docs/deployment.md) covers the `systemd --user` unit, the `--allow-scripts` trap
+when installing `dsh` with npm 12, what to back up, and the post-upgrade regression checklist.
+
 ## Connecting a directory
 
 Read [docs/ldap-integration.md](docs/ldap-integration.md) first: it lists the values the directory team

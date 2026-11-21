@@ -8,6 +8,12 @@ behaviour change increments the minor version and an internal change increments 
 
 ## [Unreleased]
 
+### Added
+
+- `docs/deployment.md` and `docs/deployment.zh.md`: the `systemd --user` unit with lingering, the
+  `--allow-scripts` requirement for npm 12 installs, what to back up, the post-upgrade regression
+  checklist, and a troubleshooting table.
+
 ## [0.3.2] - 2026-11-21
 
 ### Fixed

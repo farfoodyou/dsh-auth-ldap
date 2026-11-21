@@ -91,6 +91,7 @@ pnpm verify
 | `README.zh.md`                           | 中文 | 同内容，保持同步                         |
 | `docs/design/`                           | 英文 | 每个子系统一篇设计说明，行为的真源       |
 | `docs/ldap-integration.md`（+ `.zh.md`） | 双语 | 交给目录管理员的接入清单，两种语言须同步 |
+| `docs/deployment.md`（+ `.zh.md`）       | 双语 | 主机部署、升级、备份与升级后检查清单     |
 | `docs/adr/`                              | 英文 | 决策记录，含背景与否决的备选方案         |
 | `docs/roadmap.md`                        | 英文 | 里程碑与验收标准                         |
 | `AGENTS.md`                              | 英文 | 面向自动化贡献者的约定                   |

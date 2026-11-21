@@ -58,6 +58,12 @@ pnpm run format      # prettier --write .
 - `docs/design/` and `docs/adr/` are written before behaviour that they govern. If code and a design
   note disagree, fix one of them in the same change.
 
+## Deployment changes
+
+Anything that affects how the service is installed, upgraded, backed up, or restarted belongs in
+`docs/deployment.md` and `docs/deployment.zh.md`, in both languages. The `--allow-scripts` list is
+load-bearing: an install without it produces a working CLI and a broken subprocess tool.
+
 ## Manual smoke test
 
 ```sh

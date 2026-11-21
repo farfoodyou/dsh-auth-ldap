@@ -96,6 +96,7 @@ commit subject. Force-pushing to `main` is forbidden.
 | `README.zh.md`                          | Chinese   | Same content, kept in sync                                                   |
 | `docs/design/`                          | English   | One note per subsystem; the source of truth for behaviour                    |
 | `docs/ldap-integration.md` (+ `.zh.md`) | Bilingual | Requirements sheet handed to the directory team; keep both languages in sync |
+| `docs/deployment.md` (+ `.zh.md`)       | Bilingual | Host setup, upgrades, backups, and the post-upgrade checklist                |
 | `docs/adr/`                             | English   | Decisions with context and rejected alternatives                             |
 | `docs/roadmap.md`                       | English   | Milestones and their acceptance criteria                                     |
 | `AGENTS.md`                             | English   | Conventions for automated contributors                                       |
